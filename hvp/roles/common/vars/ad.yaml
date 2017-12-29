@@ -1,0 +1,8 @@
+hvp_adjoin_realm: AD.MGMT.PRIVATE
+hvp_adjoin_username: adhvpadmin
+hvp_adjoin_password: HVP_dem0
+hvp_netbios_domainname: AD
+hvp_netbios_storagename: DISCORD
+hvp_ad_range: 9999-1999999999
+hvp_autorid_range: 2000000000-3999999999
+hvp_autorid_rangesize: 1000000

@@ -1,0 +1,49 @@
+# gDeploy Gluster configuration cleanup file for HVP
+
+# Nodes in the trusted pool
+[hosts]
+{% for host in groups['glusternodes'] %}
+{{ host }}
+{% endfor %}
+
+# TODO: add LVM reset actions (create a fact gathering module hvp_gluster_disks then cycle among hosts and disks)
+
+[volume1]
+action=delete
+volname=enginedomain
+
+[volume2]
+action=delete
+volname=vmstoredomain
+
+[volume3]
+action=delete
+volname=isodomain
+
+[volume4]
+action=delete
+volname=ctdb
+
+[volume5]
+action=delete
+volname=winshare
+
+[volume6]
+action=delete
+volname=unixshare
+
+[volume7]
+action=delete
+volname=blockshare
+
+[peer]
+action=detach
+
+[service1]
+action=stop
+service=glusterd
+
+[service2]
+action=disable
+service=glusterd
+

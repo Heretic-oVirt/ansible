@@ -1,0 +1,48 @@
+---
+- name: perform Samba AD configuration
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: get common AD vars
+      include_vars:
+        file: ../common/vars/ad.yaml
+    - name: prepare Samba configuration file
+      template:
+        src: templates/smb.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: 0644
+- name: perform Samba cluster AD joining
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: get common AD vars
+      include_vars:
+        file: ../common/vars/ad.yaml
+    - name: obtain Kerberos ticket
+      expect:
+        command: "kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}"
+        responses:
+          (?i)password: "{{ hvp_adjoin_password }}"
+    - name: join AD domain
+      shell: net ads join -k osName="CentOS" osVer="7.4.1708"
+      register: join_result
+    - name: remove Kerberos ticket
+      shell: kdestroy
+      register: kdestroy_result
+- name: restart Samba services
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: Restart CTDB to apply the configuration above
+      systemd:
+        name: ctdb
+        state: restarted
+...

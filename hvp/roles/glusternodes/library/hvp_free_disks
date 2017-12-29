@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Default values for parameters
+min_size_bytes="10000000000"
+# Note: use 0 as true (include SSDs) and 1 as false (reject SSDs)
+accept_ssds="1"
+
+# Load any given parameters
+if [ -n "${1}" -a -f "${1}" ]; then
+	source "${1}"
+fi
+
+# Retrieve disk list
+# Note: SSDs are conditionally excluded (lsblk convention is 0 for SSD and 1 for rotational)
+# Note: suitable disks must be acceptable as physical volumes but currently unpartitioned and unassigned to any volume group
+free_disks=$(for disk in $(lsblk -b -d -o NAME,SIZE,ROTA -n | awk "{if ((\$2 > ${min_size_bytes}) && (\$3 >= ${accept_ssds})) print \$1}"); do
+	if ! pvs --noheadings | grep -q ${disk} && parted -s /dev/${disk} print 2>/dev/null | grep -iq '^partition.*unknown'; then
+		echo ${disk}
+	fi
+done)
+
+# Format disk list
+free_disks_list=""
+for disk in ${free_disks}; do
+	if [ -n "${free_disks_list}" ]; then
+		free_disks_list="${free_disks_list}, "
+	fi
+	free_disks_list="${free_disks_list}{ \"name\": \"${disk}\", \"size\": $(blockdev --getsize64 /dev/${disk}) }"
+done
+
+# Give results in JSON format to be gathered as custom additional facts
+# TODO: detect errors in commands above and emit proper rc and msg values
+cat << EOM
+{
+    "changed" : false,
+    "ansible_facts" : {
+        "hvp_free_disks" : [${free_disks_list}]
+    }
+}
+EOM

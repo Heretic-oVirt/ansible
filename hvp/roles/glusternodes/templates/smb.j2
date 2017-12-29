@@ -1,0 +1,83 @@
+[global]
+   server string = Enterprise File Server
+   netbios name = {{ hvp_netbios_storagename }}
+   workgroup = {{ hvp_netbios_domainname }}
+   realm = {{ hvp_adjoin_realm }}
+   security = ads
+   kerberos method = secrets only
+   bind interfaces only = no
+   clustering = yes
+   ctdbd socket = /run/ctdb/ctdbd.socket
+   private dir = /gluster/lock
+
+   passdb backend = tdbsam
+   idmap config * : backend = autorid
+   idmap config * : range = {{ hvp_autorid_range }}
+   idmap config * : rangesize = {{ hvp_autorid_rangesize }}
+   idmap config {{ hvp_netbios_domainname }} : backend = ad
+   idmap config {{ hvp_netbios_domainname }} : range = {{ hvp_ad_range }}
+   idmap config {{ hvp_netbios_domainname }} : schema_mode = rfc2307
+   idmap config {{ hvp_netbios_domainname }} : unix_nss_info = yes
+   winbind nested groups = yes
+   winbind expand groups = 2
+
+   load printers = no
+   printing = bsd
+   printcap name = /dev/null
+   disable spoolss = yes
+   show add printer wizard = no
+   cups options = raw
+
+   log file = /var/log/samba/log.%m
+   log level = 2
+   max log size = 50
+   syslog = 1
+   syslog only = No
+
+   map to guest = Bad user
+   username map = /etc/samba/smbusers
+   store dos attributes = no
+   map acl inherit = no
+   dos filemode = no
+   dos filetime resolution = yes
+   create mask = 0664
+   force create mode = 440
+   directory mask = 6775
+   force directory mode = 550
+   unix extensions = no
+   hide special files = yes
+   dead time = 15
+   preserve case = yes
+   short preserve case = yes
+   default case = lower
+   case sensitive = no
+   max protocol = SMB3
+   kernel share modes = no
+   locking = yes
+   strict locking = no
+   oplocks = no
+   level2 oplocks = no
+   kernel oplocks = no
+   stat cache = no
+   max open files = 16404
+
+[IPC$]
+   comment = Remote IPC
+   path = /tmp
+
+
+#====================== Local Share Definitions ==============================
+
+[Test]
+   comment = Test share
+   path = /
+   browseable = yes
+   writable = yes
+   available = yes
+   guest ok = yes
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-test.log
+   glusterfs:volume = winshare

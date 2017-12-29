@@ -1,0 +1,37 @@
+---
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: perform oVirt configuration
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: reconfigure default gateway
+      nmcli:
+        conn_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
+        gw4: "{{ hvp_gateway_ip }}"
+        type: ethernet
+        state: present
+    - name: add our own repo
+      get_url:
+        url: https://dangerous.ovirt.life/hvp-repos/el7/HVP.repo
+        dest: /etc/yum.repos.d/HVP.repo
+        mode: 0644
+    - name: install the Bareos-related packages
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items: bareos-tools bareos-client bareos-director bareos-webui
+    - name: enable and start the Bareos-related services
+      systemd:
+        name: "{{ item }}"
+        enabled: False
+        state: stopped
+        no_block: no
+      with_items: bareos-fd bareos-dir
+...

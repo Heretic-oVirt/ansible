@@ -1,0 +1,6 @@
+---
+- name: Generate root ECDSA SSH key if not present
+  shell: ssh-keygen -q -t ecdsa -b 521 -N "" -f /root/.ssh/id_ecdsa
+  args:
+    creates: /root/.ssh/id_ecdsa
+...

@@ -1,0 +1,55 @@
+---
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: inspect gluster nodes
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: gather suitable disks
+      hvp_free_disks: min_size_bytes=100000000000 accept_ssds=1
+    - name: gather suitable ssds
+      hvp_free_ssds: min_size_bytes=100000000000
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+- name: Configure and start CTDB
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: enable and start the wait service for Gluster ctdb volume
+      systemd:
+        name: gluster-ctdb-wait-online
+        enabled: True
+        state: started
+        no_block: no
+    - name: enable and start the local mounting of the Gluster ctdb volume
+      systemd:
+        name: gluster-lock.mount
+        enabled: True
+        state: started
+        no_block: no
+    - name: enable and start the RT bandwidth configuration
+      systemd:
+        name: cgroup-rt-bandwidth
+        enabled: True
+        state: started
+        no_block: no
+    - name: enable and start the CTDB service
+      systemd:
+        name: ctdb
+        enabled: True
+        state: started
+        no_block: no
+- name: Configure Samba authentication
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: wait for Samba to become ready on the host
+      wait_for: port=445 timeout=300
+    - name: configure local root user
+      shell: "echo -e '\n{{ ansible_ssh_pass }}\n{{ ansible_ssh_pass }}\n' | smbpasswd -s -a root"
+      register: smbpasswd_result
+...

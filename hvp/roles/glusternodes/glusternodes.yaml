@@ -1,0 +1,32 @@
+---
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: inspect gluster nodes
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: gather suitable disks
+      hvp_free_disks: min_size_bytes=100000000000 accept_ssds=1
+    - name: gather suitable ssds
+      hvp_free_ssds: min_size_bytes=100000000000
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+- name: perform gdeploy-based Gluster configuration
+  hosts: localhost
+  remote_user: root
+  tasks:
+    - name: prepare gdeploy setup configuration file
+      template:
+        src: templates/gdeploy.j2
+        dest: "{{ playbook_dir }}/gdeploy.conf"
+        owner: root
+        group: root
+        mode: 0644
+    - name: perform actual gdeploy-based Gluster configuration
+      command: gdeploy -k -vv -c "{{ playbook_dir }}/gdeploy.conf"
+      register: gdeploy_result
+...

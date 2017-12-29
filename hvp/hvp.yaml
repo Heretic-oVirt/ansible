@@ -1,0 +1,9 @@
+---
+- include: roles/glusternodes/glusternodes.yaml
+- include: roles/ovirtnodes/ovirtnodes.yaml
+- include: roles/ovirtengine/ovirtengine.yaml
+- include: roles/ovirtengine/ovn.yaml
+- include: roles/glusternodes/ctdb.yaml
+- include: roles/ovirtengine/nfsdomains.yaml
+- include: roles/glusternodes/adjoin.yaml
+...

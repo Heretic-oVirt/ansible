@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Load any given parameters
+if [ -n "${1}" -a -f "${1}" ]; then
+	source "${1}"
+fi
+
+# Retrieve CPU type
+cpu_vendor="$(virsh -r capabilities | xmllint --xpath '/capabilities/host/cpu/vendor/text()' -)"
+cpu_model="$(virsh -r capabilities | xmllint --xpath '/capabilities/host/cpu/model/text()' -)"
+
+# Retrieve all supported CPU models
+unset models
+declare -A models
+i="0"
+for model in $(virsh -r cpu-models $(uname -m)) ; do
+	models["${model}"]="${i}"
+	i=$((i+1))
+done
+
+# Find index for our CPU model
+cpu_index="${models[${cpu_model}]}"
+
+# Give results in JSON format to be gathered as custom additional facts
+# TODO: detect errors in commands above and emit proper rc and msg values
+cat << EOM
+{
+    "changed" : false,
+    "ansible_facts" : {
+        "hvp_cpu_type": {"vendor": "${cpu_vendor}", "model": "${cpu_model}", "index": "${cpu_index}"}
+    }
+}
+EOM

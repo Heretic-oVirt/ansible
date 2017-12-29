@@ -1,0 +1,68 @@
+---
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: Gather cpu type across all hosts
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: gather cpu types
+      hvp_cpu_type:
+- name: Check cpu facts cluster-wide
+  hosts: localhost
+  tasks:
+    - name: make sure that the cpu vendor is homogeneous
+      assert: { that: "hostvars['{{ item }}']['hvp_cpu_type']['vendor'] == hostvars[groups['ovirt_master'][0]]['hvp_cpu_type']['vendor']", msg: "CPU vendor must be the same across all hosts" }
+      with_items: "{{ groups['ovirt_nonmaster_nodes'] }}"
+    - name: define common cpu index
+      set_fact:
+        cpu_index: "{{ groups['ovirtnodes'] | map('extract', hostvars, ['hvp_cpu_type', 'index']) | list | sort | min }}"
+    - name: define common cpu model
+      set_fact:
+        cpu_type: "model_{{ groups['ovirtnodes'] | map('extract', hostvars, 'hvp_cpu_type') | list | json_query(\"[?index == '\" + cpu_index + \"'].model\") | first }}"
+- name: perform oVirt configuration
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - name: define traditional ethernet facts
+      set_fact:
+        ansible_eth: "{% set ansible_eth = ansible_eth|default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ ansible_eth|list }}"
+      when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether') or (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'bonding')
+      with_items:
+        - "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
+    - name: reset VDSM configuration
+      command: vdsm-tool configure --force
+      register: vdsm_result
+- name: perform oVirt Hosted Engine setup
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: generate random MAC address for Engine appliance
+      shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
+      register: mac_result
+    - name: get Engine appliance ova filename
+      shell: echo /usr/share/ovirt-engine-appliance/ovirt-engine-appliance-*.ova
+      register: ova_result
+    - name: create target directory for answer file
+      file:
+        path: /root/etc
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+    - name: prepare hosted engine installation answer file
+      template:
+        src: templates/he-answers.j2
+        dest: /root/etc/he-answers.conf
+        owner: root
+        group: root
+        mode: 0644
+    - name: perform actual Hosted Engine setup
+      command: hosted-engine --deploy --config-append=/root/etc/he-answers.conf
+      register: setup_result
+...

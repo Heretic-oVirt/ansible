@@ -1,0 +1,7 @@
+---
+- name: Set authorized ssh key to allow ssh passwordless access
+  authorized_key:
+    user: root
+    state: present
+    key: "{{ lookup('file', '/root/.ssh/id_ecdsa.pub') }}"
+...

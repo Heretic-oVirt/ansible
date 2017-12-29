@@ -1,0 +1,57 @@
+---
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: perform oVirt configuration
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: Enable libgfapi support
+      command: engine-config -s LibgfApiSupported=true
+      register: libgfapi_result
+    - name: Obtain oVirt Engine SSO token
+      no_log: true
+      ovirt_auth:
+        url: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_file: "{{ ca_file }}"
+    - name: Add main storage domain
+      ovirt_storage_domains:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ vmstore_sd_name }}"
+        host: "{{ hvp_master_node }}"
+        data_center: "{{ dc_name }}"
+        domain_function: data
+        state: present
+        glusterfs:
+          address: "{{ vmstore_sd_addr }}"
+          path: "{{ vmstore_sd_path }}"
+          mount_options: "{{ vmstore_sd_mountopts }}"
+        wait: true
+    - name: Add Host
+      ovirt_hosts:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item }}"
+        address: "{{ item }}"
+        hosted_engine: deploy
+        force: true
+        public_key: no
+        password: "{{ password }}"
+        cluster: "{{ cluster_name }}"
+        override_iptables: true
+        poll_interval: 30
+        timeout: 1200
+        wait: true
+      with_items: "{{ groups['ovirt_nonmaster_nodes'] }}"
+    - name: Revoke the SSO token
+      no_log: true
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"
+...

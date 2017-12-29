@@ -1,0 +1,39 @@
+---
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: perform oVirt configuration
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: Obtain oVirt Engine SSO token
+      no_log: true
+      ovirt_auth:
+        url: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_file: "{{ ca_file }}"
+    - name: Add ISO storage domain
+      ovirt_storage_domains:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ iso_sd_name }}"
+        host: "{{ hvp_master_node }}"
+        data_center: "{{ dc_name }}"
+        domain_function: iso
+        state: present
+        nfs:
+          address: "{{ iso_sd_addr }}"
+          path: "{{ iso_sd_path }}"
+          version: auto
+        wait: true
+    - name: Revoke the SSO token
+      no_log: true
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"
+...
