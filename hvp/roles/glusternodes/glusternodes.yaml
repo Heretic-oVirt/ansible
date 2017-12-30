@@ -1,4 +1,6 @@
 ---
+# Ansible playbook for GlusterFS nodes
+# Note: CTDB-based configurations demanded to separate playbook (needs all oVirt nodes added to cluster to get proper interface/bridge names)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
