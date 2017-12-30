@@ -1,4 +1,5 @@
 #!/bin/bash
+# A custom fact-gathering module to find free (not already partitioned/used) disks on nodes
 
 # Default values for parameters
 min_size_bytes="10000000000"
