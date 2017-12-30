@@ -1,6 +1,6 @@
 # TODO list for Ansible files
 
-The following TODO items are taken stright from Kickstart notes in heresiarch.ks (where the Ansible files were created initially):
+The following TODO items are taken stright from Kickstart comments in heresiarch.ks (where the Ansible files were created initially) which were written outside of the relevant files:
 
 * either remove the password-related variables from global group var files or at least encrypt them with Ansible Vault
 
