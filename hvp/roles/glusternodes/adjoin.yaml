@@ -1,4 +1,5 @@
 ---
+# Ansible playbook for Active Directory joining of our Samba cluster
 - name: perform Samba AD configuration
   hosts: glusternodes
   remote_user: root
