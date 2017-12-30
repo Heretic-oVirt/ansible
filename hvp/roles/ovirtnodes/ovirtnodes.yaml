@@ -1,4 +1,8 @@
 ---
+# Ansible playbook for oVirt nodes
+# Note: oVirt Hosted Engine installation will be performed on the node selected as master above
+# Note: we assume that libvirt lists the CPU models in an ordered sequence of increasing available features (apart from appending AMD models to Intel ones)
+# Note: eth interfaces enumeration taken from https://serverfault.com/a/852093
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
