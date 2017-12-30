@@ -1,4 +1,5 @@
 ---
+# Global Ansible playbook for the whole process (Gluster and oVirt)
 - include: roles/glusternodes/glusternodes.yaml
 - include: roles/ovirtnodes/ovirtnodes.yaml
 - include: roles/ovirtengine/ovirtengine.yaml
