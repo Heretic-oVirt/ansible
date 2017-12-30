@@ -1,4 +1,8 @@
 ---
+# Ansible playbook for oVirt Engine
+# Note: Ansible oVirt management thanks to Simone Tiraboschi
+# Note: SSH hardening (root access allowed only with key) demanded to post add-host due to inability to authenticate from Engine with publickey
+# Note: NFS-based storage domains configuration demanded to separate playbook (needs CTDB active which in turn needs all further nodes added to oVirt cluster)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
