@@ -1,4 +1,5 @@
 ---
+# Note: taken from https://stackoverflow.com/questions/29955605/how-to-reboot-centos-7-with-ansible
 - name: properly power down hosts
   remote_user: root
   gather_facts: False
