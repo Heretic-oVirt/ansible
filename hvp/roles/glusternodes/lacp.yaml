@@ -1,4 +1,7 @@
 ---
+# Ansible playbook for nodes nic bonding forced LACP setup
+# Note: the following will powerdown the nodes at the end so that manual switch configuration can be performed before powering them up again
+# Note: the rationale behind this playbook is that LACP seriously interfers both with standard PXE booting and our custom network bonding autodetection logic above - use AP/RR during installation, then use this to convert every bond to LACP afterwards
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
