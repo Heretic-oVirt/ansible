@@ -1,4 +1,5 @@
 #!/bin/bash
+# A custom fact-gathering module to find CPU type on nodes
 
 # Load any given parameters
 if [ -n "${1}" -a -f "${1}" ]; then
