@@ -1,4 +1,5 @@
 ---
+# Ansible playbook for GlusterFS nodes unconfiguration (cleanup)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
