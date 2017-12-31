@@ -18,7 +18,7 @@ The following TODO items are taken stright from Kickstart comments in heresiarch
 
 * in roles/ovirtnodes/templates/he-answers.j2: find out why the for loop does not insert a newline at the end - added another one as a workaround
 
-* in roles/ovirtnodes/templates/he-answers.j2: open Bugzilla ticket and add cloudinit parameters for cluster and datacenter names here
+* in roles/ovirtnodes/templates/he-answers.j2: open RFE Bugzilla ticket and add cloudinit parameters for cluster and datacenter names when supported upstream
 
 * in roles/ovirtengine/ovirtengine.yaml: find a way to determine the local mgmt network address also when mgmt is not the main interface (eg default gateway on lan network)
 
@@ -28,7 +28,7 @@ The following TODO items are taken stright from Kickstart comments in heresiarch
 
 * in roles/ovirtengine/ovn.yaml: create a couple of OVN logical networks
 
-* in roles/ovirtengine/ovn.yaml: add OVN networks for lan (needed for CTDB) and internal zones if present
+* in roles/ovirtengine/ovn.yaml: add oVirt networks for lan (needed for CTDB) and internal zones if present
 
 * in roles/glusternodes/templates/smb.j2: lower log level to 0 general and vfs-glusterfs too
 
