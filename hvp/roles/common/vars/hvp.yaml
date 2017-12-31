@@ -12,7 +12,7 @@ hvp_engine_netprefix: 24
 hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
 hvp_switch_ip: 172.20.10.200
 hvp_gateway_ip: 172.20.10.1
-hvp_timezone: Europe/Rome
+hvp_timezone: UTC
 hvp_mgmt_bridge_name: ovirtmgmt
 hvp_firewall_manager: "firewalld"
 hvp_spice_pki_subject: "C=EN, L=Test, O=Test, CN=Test"
