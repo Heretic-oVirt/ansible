@@ -15,9 +15,6 @@
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: Enable libgfapi support
-      command: engine-config -s LibgfApiSupported=true
-      register: libgfapi_result
     - name: Obtain oVirt Engine SSO token
       no_log: true
       ovirt_auth:
