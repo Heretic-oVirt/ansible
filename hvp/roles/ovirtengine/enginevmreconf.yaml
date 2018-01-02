@@ -17,11 +17,10 @@
         gw4: "{{ hvp_gateway_ip }}"
         type: ethernet
         state: present
-    - name: add our own repo
-      get_url:
-        url: https://dangerous.ovirt.life/hvp-repos/el7/HVP.repo
-        dest: /etc/yum.repos.d/HVP.repo
-        mode: 0644
+    - name: add HVP repo
+      yum:
+        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-1.noarch.rpm
+        state: latest
     - name: install the Bareos-related packages
       yum:
         name: "{{ item }}"
