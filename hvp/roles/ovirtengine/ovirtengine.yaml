@@ -43,7 +43,7 @@
         hosted_engine: deploy
         force: true
         public_key: no
-        password: "{{ password }}"
+        password: "{{ host_password }}"
         cluster: "{{ cluster_name }}"
         override_iptables: true
         poll_interval: 30
