@@ -43,17 +43,24 @@ username: admin@internal
 password: HVP_dem0
 ca_file: /etc/pki/ovirt-engine/ca.pem
 
+# Hosts credentials:
+host_password: HVP_dem0
+host_bmc_type: ipmilan
+host_bmc_options: []
+host_bmc_user: hvpbmcadmin
+host_bmc_password: HVP_dem0
+
 # Env:
 ## Datacenter:
 # TODO: forcing default name since any personalization does not get into appliance cloudinit and causes mismatch - open Bugzilla ticket and revert
-#dc_name: HVPDataCenter
+hvp_dc_name: HVPDataCenter
 dc_name: "Default"
 # TODO: verify whether "master" is a valid compatibility_version - replace otherwise
 compatibility_version: 4.1
 
 ## Cluster:
 # TODO: forcing default name since any personalization does not get into appliance cloudinit and causes mismatch - open Bugzilla ticket and revert
-#cluster_name: HVPCluster
+hvp_cluster_name: HVPCluster
 cluster_name: "Default"
 
 ## Storage
