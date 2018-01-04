@@ -14,13 +14,13 @@
       hvp_free_disks: min_size_bytes=100000000000 accept_ssds=1
     - name: gather suitable ssds
       hvp_free_ssds: min_size_bytes=100000000000
-    - name: get common vars
-      include_vars:
-        file: ../common/vars/hvp.yaml
 - name: perform gdeploy-based Gluster configuration
   hosts: localhost
   remote_user: root
   tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: prepare gdeploy setup configuration file
       template:
         src: templates/gdeploy.j2
