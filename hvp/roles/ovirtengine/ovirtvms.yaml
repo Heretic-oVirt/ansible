@@ -1,0 +1,50 @@
+---
+# Ansible playbook for oVirt VMs creation
+# Note: Ansible oVirt management thanks to Simone Tiraboschi
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include: ../common/tasks/createkeys.yaml
+- name: Perform global oVirt operations through the Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: Get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+        file: ../common/vars/vms.yaml
+    - name: Obtain oVirt Engine SSO token
+      no_log: true
+      ovirt_auth:
+        url: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_file: "{{ ca_file }}"
+    - name: Create all oVirt VMs
+      ovirt_vms:
+        state: present
+        cluster: "{{ cluster_name }}"
+        storage_domain: "{{ vmstore_sd_name }}"
+        name: myvm
+        comment: My VM
+        memory: 2GiB
+        cpu_cores: 2
+        cpu_sockets: 2
+        cpu_shares: 1024
+        type: server
+        operating_system: rhel_7x64
+        boot_devices:
+          - hd
+          - network
+        disks:
+          - name: rhel7_disk
+            bootable: True
+        nics:
+          - name: nic1
+    - name: Revoke the SSO token
+      no_log: true
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"
+...
