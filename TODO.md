@@ -22,6 +22,8 @@ The following TODO items are taken stright from Kickstart comments in heresiarch
 
 * in roles/ovirtengine/ovirtengine.yaml: find a way to determine the local mgmt network address also when mgmt is not the main interface (eg default gateway on lan network)
 
+* add support for BMC options in roles/ovirtengine/ovirtengine.yaml
+
 * in roles/ovirtengine/enginevmreconf.yaml: add generic configuration of Engine vm (take it from other HVP Kickstarts)
 
 * in roles/ovirtengine/enginevmreconf.yaml: add Bareos configuration both on engine and on nodes - maybe separate into independent bareos.yaml playbook
