@@ -1,13 +1,14 @@
 ---
 # Ansible playbook for oVirt Engine
 # Note: Ansible oVirt management thanks to Simone Tiraboschi
+# Note: PM parameters are assumed equal among all Nodes
 # Note: SSH hardening (root access allowed only with key) demanded to post add-host due to inability to authenticate from Engine with publickey
 # Note: NFS-based storage domains configuration demanded to separate playbook (needs CTDB active which in turn needs all further nodes added to oVirt cluster)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: perform oVirt configuration
+- name: Perform global oVirt configuration through the Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
@@ -22,7 +23,7 @@
         username: "{{ username }}"
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
-    - name: Add main storage domain
+    - name: Add main DC storage domain
       ovirt_storage_domains:
         auth: "{{ ovirt_auth }}"
         name: "{{ vmstore_sd_name }}"
@@ -35,7 +36,7 @@
           path: "{{ vmstore_sd_path }}"
           mount_options: "{{ vmstore_sd_mountopts }}"
         wait: true
-    - name: Add Host
+    - name: Add further Hosts
       ovirt_hosts:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
@@ -50,6 +51,23 @@
         timeout: 1200
         wait: true
       with_items: "{{ groups['ovirt_nonmaster_nodes'] }}"
+    - name: Add Power Management to all Hosts
+      ovirt_host_pm:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item.0 }}"
+        address: "{{ item.1 }}"
+        type: "{{ host_bmc_type }}"
+        username: "{{ host_bmc_user }}"
+        password: "{{ host_bmc_password }}"
+        poll_interval: 30
+        wait: true
+      with_together:
+        - "{{ groups['ovirtnodes'] }}"
+        - "{{ groups['ovirtbmcs'] }}"
+      when:
+        - host_bmc_type is defined
+        - host_bmc_user is defined
+        - host_bmc_password is defined
     - name: Revoke the SSO token
       no_log: true
       ovirt_auth:
