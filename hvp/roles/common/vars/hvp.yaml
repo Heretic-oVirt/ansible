@@ -1,3 +1,6 @@
+# Globalòl variables for HVP Ansible playbooks
+# Note: this file will be overridden by install-time autodetection logic
+
 # HVP local conventions
 hvp_master_node: "{{ groups['ovirtnodes'][0] }}"
 # TODO: dynamically determine proper values for Engine RAM/CPUs/imgsize
@@ -36,6 +39,7 @@ hvp_unixshare_arbitersize: "10GB"
 hvp_blockshare_size: "1024GB"
 hvp_blockshare_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1024k"
+hvp_backup_size: "1024GB"
 
 # Engine credentials:
 url: https://celestia.mgmt.private/ovirt-engine/api
@@ -55,7 +59,6 @@ host_bmc_password: HVP_dem0
 # TODO: forcing default name since any personalization does not get into appliance cloudinit and causes mismatch - open Bugzilla ticket and revert
 hvp_dc_name: HVPDataCenter
 dc_name: "Default"
-# TODO: verify whether "master" is a valid compatibility_version - replace otherwise
 compatibility_version: 4.1
 
 ## Cluster:
