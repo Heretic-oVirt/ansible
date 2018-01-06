@@ -1,4 +1,4 @@
-# Globalòl variables for HVP Ansible playbooks
+# Global variables for HVP Ansible playbooks
 # Note: this file will be overridden by install-time autodetection logic
 
 # HVP local conventions
