@@ -40,6 +40,7 @@ hvp_blockshare_size: "1024GB"
 hvp_blockshare_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1024k"
 hvp_backup_size: "1024GB"
+hvp_backup_arbitersize: "10GB"
 
 # Engine credentials:
 url: https://celestia.mgmt.private/ovirt-engine/api
