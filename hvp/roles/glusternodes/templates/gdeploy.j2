@@ -41,21 +41,22 @@ yes
 # TODO: dynamically calculate sizes and metadata sizes for thinpools (cfr https://gerrit.ovirt.org/#/c/75645/3)
 # TODO: allow for SSD-backed (to be autodetected) LVM caches (either only one SSD partitioned to proportionally provide cache to all vgs or one dedicated SSD cache for each vg)
 # TODO: give error for an insufficient number of disks/hosts or insufficient space on disks
-# Note: enginedomain (thick 100 GiB) LVs will host the oVirt Engine Gluster volume bricks
-# Note: vmstoredomain (thin 500 GiB) LVs will host the oVirt vm disks Gluster volume bricks
-# Note: isodomain (thin 30 GiB) LVs will host the oVirt ISO images Gluster volume bricks
-# Note: ctdb (thick 1 GiB - no arbiter) LVs will host the CTDB lock Gluster volume bricks
-# Note: winshare (thin 1 TiB) LVs will host the Samba share Gluster volume bricks
-# Note: unixshare (thin 1 TiB) LVs will host the Ganesha-NFS (currently Gluster-NFS) share Gluster volume bricks
-# Note: blockshare (thin 1 TiB) LVs will host the Gluster-Block share Gluster volume bricks
+# Note: enginedomain (thick {{ hvp_enginedomain_size }}) LVs will host the oVirt Engine Gluster volume bricks
+# Note: vmstoredomain (thin {{ hvp_vmstoredomain_size }}) LVs will host the oVirt vm disks Gluster volume bricks
+# Note: isodomain (thin {{ hvp_isodomain_size }}) LVs will host the oVirt ISO images Gluster volume bricks
+# Note: ctdb (thick {{ hvp_ctdb_size }} - no arbiter) LVs will host the CTDB lock Gluster volume bricks
+# Note: winshare (thin {{ hvp_winshare_size }}) LVs will host the Samba share Gluster volume bricks
+# Note: unixshare (thin {{ hvp_unixshare_size }}) LVs will host the Ganesha-NFS (currently Gluster-NFS) share Gluster volume bricks
+# Note: blockshare (thin {{ hvp_blockshare_size }}) LVs will host the Gluster-Block share Gluster volume bricks
+# Note: backup (thin {{ hvp_backup_size }}) LVs will host the Bareos Gluster volume bricks
 # Note:
 #  every suitable disk used will be made into the single PV of a VG
 #  if we have only three nodes than one node (the last one) is meant to be arbiter-only
-#  the arbiter-only node will use only one suitable disk/PV/VG (the first smallest) for all arbiter (thin 10 GiB) LVs
+#  the arbiter-only node will use only one suitable disk/PV/VG (the first smallest) for all LVs
 #  find the minimum number of suitable disks-per-node available among all active (non arbiter-only) nodes
 #   if it is one then all LVs will be in one single VG on that single PV disk
-#   if it is two then all oVirt LVs will be in one VG (PV: the last smallest disk) and the CTDB/share LVs on the other VG (PV: the first bigger disk)
-#   if it is three then CTDB/share LVs will be in one VG (PV: the first biggest disk), the enginedomain/isodomain LVs on another VG (PV: the last smallest disk) and the vmstoredomain LV will be in the other VG (PV: the first remaining disk excluding those already selected)
+#   if it is two then all oVirt LVs will be in one VG (PV: the last smallest disk) and the CTDB/share/backup LVs on the other VG (PV: the first bigger disk)
+#   if it is three then CTDB/share/backup LVs will be in one VG (PV: the first biggest disk), the enginedomain/isodomain LVs on another VG (PV: the last smallest disk) and the vmstoredomain LV will be in the other VG (PV: the first remaining disk excluding those already selected)
 #  suitable disks exceeding the number of three-per-node will be left unused (but which disks get used will be decided according to the rules detailed above)
 
 {% if groups['glusternodes'] | length == 3 %}
@@ -162,6 +163,16 @@ mount=/gluster_bricks/blockshare/brick1
 virtualsize={{ hvp_blockshare_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}9:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk1
+lvtype=thinlv
+poolname=lvthinpool
+lvname=backup
+mount=/gluster_bricks/backup/brick1
+virtualsize={{ hvp_backup_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% elif disk_count | int == 2 %}
@@ -169,7 +180,7 @@ ignore_lv_errors=no
 {% for node_index in range(2) %}
 # Node {{ node_index }} setup
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
-# Note: we will use the biggest for CTDB/share
+# Note: we will use the biggest for CTDB/share/backup
 {% set share_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
 # Note: we will use the smallest for oVirt
 {% set ovirt_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | min) | map(attribute='name') | list | sort | last %}
@@ -284,6 +295,16 @@ mount=/gluster_bricks/blockshare/brick1
 virtualsize={{ hvp_blockshare_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}10:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk2
+lvtype=thinlv
+poolname=lvthinpool
+lvname=backup
+mount=/gluster_bricks/backup/brick1
+virtualsize={{ hvp_backup_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% elif disk_count | int >= 3 %}
@@ -291,7 +312,7 @@ ignore_lv_errors=no
 {% for node_index in range(2) %}
 # Node {{ node_index }} setup
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
-# Note: we will use the first biggest for CTDB/share
+# Note: we will use the first biggest for CTDB/share/backup
 {% set share_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
 # Note: we will use the last smallest for oVirt Engine and ISO
 {% set ovirt_other_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | min) | map(attribute='name') | list | sort | last %}
@@ -429,6 +450,16 @@ mount=/gluster_bricks/blockshare/brick1
 virtualsize={{ hvp_blockshare_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}11:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk2
+lvtype=thinlv
+poolname=lvthinpool
+lvname=backup
+mount=/gluster_bricks/backup/brick1
+virtualsize={{ hvp_backup_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% endif %}
@@ -525,6 +556,16 @@ poolname=lvthinpool
 lvname=blockshare
 mount=/gluster_bricks/blockshare/brick1
 virtualsize={{ hvp_blockshare_arbitersize }}
+ignore_lv_errors=no
+
+[lv29:{{ groups['glusternodes'][2] }}]
+action=create
+vgname=vgarbiter
+lvtype=thinlv
+poolname=lvthinpool
+lvname=backup
+mount=/gluster_bricks/backup/brick1
+virtualsize={{ hvp_backup_arbitersize }}
 ignore_lv_errors=no
 
 {% else %}
@@ -646,4 +687,17 @@ force=yes
 key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,cluster.shd-max-threads,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops
 value=metadata-cache,0,0,on,64MB,32,full,granular,10000,8,10,off,on,off,on,on
 brick_dirs=/gluster_bricks/blockshare/brick1/brick
+ignore_volume_errors=no
+
+[volume8]
+action=create
+volname=backup
+transport=tcp
+replica=yes
+replica_count=3
+arbiter_count=1
+force=yes
+key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,cluster.shd-max-threads,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops
+value=metadata-cache,0,0,on,64MB,32,full,granular,10000,8,10,off,on,off,on,on
+brick_dirs=/gluster_bricks/backup/brick1/brick
 ignore_volume_errors=no
