@@ -97,20 +97,20 @@ ignore_lv_errors=no
 [lv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-lvtype=thinpool
-poolname=lvthinpool
-poolmetadatasize=1GB
-chunksize={{ hvp_thinpool_chunksize }}
-size=4096GB
+lvtype=thick
+lvname=enginedomain
+mount=/gluster_bricks/enginedomain/brick1
+size={{ hvp_enginedomain_size }}
 ignore_lv_errors=no
 
 [lv{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-lvtype=thick
-lvname=enginedomain
-mount=/gluster_bricks/enginedomain/brick1
-size={{ hvp_enginedomain_size }}
+lvtype=thinpool
+poolname=lvthinpool
+poolmetadatasize=1GB
+chunksize={{ hvp_thinpool_chunksize }}
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv{{ node_index }}4:{{ groups['glusternodes'][node_index] }}]
@@ -219,20 +219,20 @@ ignore_lv_errors=no
 [lv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-lvtype=thinpool
-poolname=lvthinpool
-poolmetadatasize=10MB
-chunksize={{ hvp_thinpool_chunksize }}
-size=1024GB
+lvtype=thick
+lvname=enginedomain
+mount=/gluster_bricks/enginedomain/brick1
+size={{ hvp_enginedomain_size }}
 ignore_lv_errors=no
 
 [lv{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-lvtype=thick
-lvname=enginedomain
-mount=/gluster_bricks/enginedomain/brick1
-size={{ hvp_enginedomain_size }}
+lvtype=thinpool
+poolname=lvthinpool
+poolmetadatasize=10MB
+chunksize={{ hvp_thinpool_chunksize }}
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv{{ node_index }}4:{{ groups['glusternodes'][node_index] }}]
@@ -262,7 +262,7 @@ lvtype=thinpool
 poolname=lvthinpool
 poolmetadatasize=1GB
 chunksize={{ hvp_thinpool_chunksize }}
-size=4096GB
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv{{ node_index }}7:{{ groups['glusternodes'][node_index] }}]
@@ -364,20 +364,20 @@ ignore_lv_errors=no
 [lv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-lvtype=thinpool
-poolname=lvthinpool
-poolmetadatasize=10MB
-chunksize={{ hvp_thinpool_chunksize }}
-size=250GB
+lvtype=thick
+lvname=enginedomain
+mount=/gluster_bricks/enginedomain/brick1
+size={{ hvp_enginedomain_size }}
 ignore_lv_errors=no
 
 [lv{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-lvtype=thick
-lvname=enginedomain
-mount=/gluster_bricks/enginedomain/brick1
-size={{ hvp_enginedomain_size }}
+lvtype=thinpool
+poolname=lvthinpool
+poolmetadatasize=10MB
+chunksize={{ hvp_thinpool_chunksize }}
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv{{ node_index }}4:{{ groups['glusternodes'][node_index] }}]
@@ -387,7 +387,7 @@ lvtype=thinpool
 poolname=lvthinpool
 poolmetadatasize=10MB
 chunksize={{ hvp_thinpool_chunksize }}
-size=1024GB
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv{{ node_index }}5:{{ groups['glusternodes'][node_index] }}]
@@ -417,7 +417,7 @@ lvtype=thinpool
 poolname=lvthinpool
 poolmetadatasize=1GB
 chunksize={{ hvp_thinpool_chunksize }}
-size=4096GB
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv{{ node_index }}8:{{ groups['glusternodes'][node_index] }}]
@@ -495,7 +495,7 @@ lvtype=thinpool
 poolname=lvthinpool
 poolmetadatasize=10MB
 chunksize={{ hvp_thinpool_chunksize }}
-size=50GB
+extent=90%FREE
 ignore_lv_errors=no
 
 [lv23:{{ groups['glusternodes'][2] }}]
