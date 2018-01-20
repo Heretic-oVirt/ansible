@@ -38,7 +38,6 @@ yes
 
 
 # Setup LVM
-# TODO: dynamically calculate sizes and metadata sizes for thinpools (cfr https://gerrit.ovirt.org/#/c/75645/3)
 # TODO: allow for SSD-backed (to be autodetected) LVM caches (either only one SSD partitioned to proportionally provide cache to all vgs or one dedicated SSD cache for each vg)
 # TODO: give error for an insufficient number of disks/hosts or insufficient space on disks
 # Note: enginedomain (thick {{ hvp_enginedomain_size }}) LVs will host the oVirt Engine Gluster volume bricks
@@ -108,7 +107,6 @@ action=create
 vgname=vgdisk1
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=1GB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
@@ -230,7 +228,6 @@ action=create
 vgname=vgdisk1
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=10MB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
@@ -260,7 +257,6 @@ action=create
 vgname=vgdisk2
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=1GB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
@@ -375,7 +371,6 @@ action=create
 vgname=vgdisk1
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=10MB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
@@ -385,7 +380,6 @@ action=create
 vgname=vgdisk3
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=10MB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
@@ -415,7 +409,6 @@ action=create
 vgname=vgdisk2
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=1GB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
@@ -493,7 +486,6 @@ action=create
 vgname=vgarbiter
 lvtype=thinpool
 poolname=lvthinpool
-poolmetadatasize=10MB
 chunksize={{ hvp_thinpool_chunksize }}
 extent=90%FREE
 ignore_lv_errors=no
