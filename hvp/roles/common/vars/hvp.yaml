@@ -88,3 +88,8 @@ engine_sd_addr: "{{ glusterfs_addr }}"
 engine_sd_name: engine_domain
 engine_sd_path: /enginedomain
 engine_sd_mountopts: "{{ glusterfs_mountopts }}"
+
+## Networking
+got_gluster_network: true
+got_lan_network: false
+got_internal_network: false
