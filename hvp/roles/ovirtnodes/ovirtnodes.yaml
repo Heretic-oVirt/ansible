@@ -67,6 +67,8 @@
         group: root
         mode: 0644
     - name: perform actual Hosted Engine setup
+      vars:
+        ansible_ssh_pipelining: no
       command: hosted-engine --deploy --config-append=/root/etc/he-answers.conf
       register: setup_result
 ...
