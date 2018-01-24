@@ -1,6 +1,6 @@
 # Ansible repository
 
-This repository contains the Ansible files used for Heretic oVirt Project:
+This repository contains the Ansible files used for the Heretic oVirt Project:
 
 *.yaml - the Ansible playbook files
 
