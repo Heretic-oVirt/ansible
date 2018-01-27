@@ -49,8 +49,9 @@ password: HVP_dem0
 ca_file: /etc/pki/ovirt-engine/ca.pem
 
 # Hosts credentials:
+# Note: the user must manually confirm BMC settings by editing here
 host_password: HVP_dem0
-host_bmc_type: ipmilan
+#host_bmc_type: ipmilan
 #host_bmc_options: []
 host_bmc_user: hvpbmcadmin
 host_bmc_password: HVP_dem0
