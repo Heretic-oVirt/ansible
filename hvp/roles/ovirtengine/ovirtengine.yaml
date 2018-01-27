@@ -36,6 +36,9 @@
           path: "{{ vmstore_sd_path }}"
           mount_options: "{{ vmstore_sd_mountopts }}"
         wait: true
+    - name: Wait to allow time for the HostedEngine vm to be registered and up
+      wait_for:
+        timeout: 300
     - name: Add further Hosts
       ovirt_hosts:
         auth: "{{ ovirt_auth }}"
