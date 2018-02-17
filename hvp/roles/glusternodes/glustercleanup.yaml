@@ -18,6 +18,12 @@
   hosts: glusternodes
   remote_user: root
   tasks:
+    - name: disable and stop the Gluster-block service
+      systemd:
+        name: gluster-blockd
+        enabled: False
+        state: stopped
+        no_block: no
     - name: disable and stop the CTDB service
       systemd:
         name: ctdb
@@ -42,6 +48,13 @@
         enabled: False
         state: stopped
         no_block: no
+   - name: copy LVM cleanup helper script
+      copy:
+        src: lvm-cleanup.sh
+        dest: /usr/local/sbin/lvm-cleanup.sh
+        owner: root
+        group: root
+        mode: 0755
 - name: perform gdeploy-based Gluster unconfiguration
   hosts: localhost
   remote_user: root
