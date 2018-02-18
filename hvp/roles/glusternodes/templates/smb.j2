@@ -69,8 +69,8 @@
 
 #====================== Local Share Definitions ==============================
 
-[Test]
-   comment = Test share
+[Shares]
+   comment = Network shares
    path = /
    browseable = yes
    writable = yes
@@ -80,5 +80,5 @@
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
-   glusterfs:logfile = /var/log/samba/glusterfs-test.log
+   glusterfs:logfile = /var/log/samba/glusterfs-shares.log
    glusterfs:volume = winshare
