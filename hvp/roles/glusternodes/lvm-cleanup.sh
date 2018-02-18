@@ -2,7 +2,7 @@
 # Script to cleanup LVM configuration outside of the OS PV/VG/LVs
 
 # Variables
-undefine vol2rm_name vol2rm_vg vol2rm_mnt pv2rm_dev
+unset vol2rm_name vol2rm_vg vol2rm_mnt pv2rm_dev
 
 # Define some useful commands
 wait_cmd="udevadm settle --timeout=5"
