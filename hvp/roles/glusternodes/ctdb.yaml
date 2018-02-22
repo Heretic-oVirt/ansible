@@ -15,6 +15,41 @@
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
+- name: Configure and start Gluster-block
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: enable and start the Gluster-block service
+      systemd:
+        name: gluster-blockd
+        enabled: True
+        state: started
+        no_block: no
+- name: Create Gluster-block based volumes
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: create an iSCSI LUN
+      shell: "gluster-block create blockshare/block0 ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} 200GiB"
+      register: createblock_result
+    - name: extract iSCSI LUN username
+      set_fact:
+        lun_username: "{{ createblock_result.stdout | regex_search(username_regexp,'\\1') }}"
+      vars:
+        username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
+    - name: extract iSCSI LUN password
+      set_fact:
+        lun_password: "{{ createblock_result.stdout | regex_search(password_regexp,'\\1') }}"
+      vars:
+        password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
+    - name: save iSCSI LUN username/password
+      copy:
+        content: |
+          Username: {{ lun_username }}
+          Password: {{ lun_password }}
+        dest: /root/etc/lun_credentials
+        backup: yes
+      delegate_to: localhost
 - name: Configure and start CTDB
   hosts: glusternodes
   remote_user: root
