@@ -20,6 +20,7 @@
   tasks:
     - name: delete an iSCSI LUN
       command: gluster-block delete blockshare/block0
+      ignore_errors: yes
       register: deleteblock_result
 - name: Stop and unconfigure Gluster-block
   hosts: glusternodes
