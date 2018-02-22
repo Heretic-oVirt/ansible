@@ -10,7 +10,7 @@
   tasks:
     - include: ../common/tasks/setupkeys.yaml
 #    - name: gather Gluster-used disks
-#      hvp_free_disks: min_size_bytes=100000000000
+#      hvp_gluster_disks: include_ssd=1
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
@@ -19,7 +19,7 @@
   remote_user: root
   tasks:
     - name: delete an iSCSI LUN
-      shell: "gluster-block delete blockshare/block0"
+      command: gluster-block delete blockshare/block0
       register: deleteblock_result
 - name: Stop and unconfigure Gluster-block
   hosts: glusternodes
