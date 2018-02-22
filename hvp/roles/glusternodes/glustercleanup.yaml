@@ -48,15 +48,15 @@
         enabled: False
         state: stopped
         no_block: no
-    - name: disable and stop the local mounting of the Gluster ctdb volume
-      systemd:
-        name: gluster-lock.mount
-        enabled: False
-        state: stopped
-        no_block: no
     - name: disable and stop the wait service for Gluster ctdb volume
       systemd:
         name: gluster-ctdb-wait-online
+        enabled: False
+        state: stopped
+        no_block: no
+    - name: disable and stop the local mounting of the Gluster ctdb volume
+      systemd:
+        name: gluster-lock.mount
         enabled: False
         state: stopped
         no_block: no
