@@ -9,12 +9,19 @@
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: gather suitable disks
-      hvp_free_disks: min_size_bytes=100000000000
+#    - name: gather Gluster-used disks
+#      hvp_free_disks: min_size_bytes=100000000000
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-- name: Stop and unconfigure CTDB
+- name: Delete Gluster-block based volumes
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: delete an iSCSI LUN
+      shell: "gluster-block delete blockshare/block0"
+      register: deleteblock_result
+- name: Stop and unconfigure Gluster-block
   hosts: glusternodes
   remote_user: root
   tasks:
@@ -24,6 +31,10 @@
         enabled: False
         state: stopped
         no_block: no
+- name: Stop and unconfigure CTDB
+  hosts: glusternodes
+  remote_user: root
+  tasks:
     - name: disable and stop the CTDB service
       systemd:
         name: ctdb
