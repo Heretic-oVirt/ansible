@@ -48,10 +48,10 @@
         immediate: True
         state: enabled
     - name: configure OVN central to listen on ports - 1
-      shell: "ovn-nbctl set-connection ptcp:6641"
+      command: ovn-nbctl set-connection ptcp:6641
       register: centralconf1_result
     - name: configure OVN central to listen on ports - 2
-      shell: "ovn-nbctl set-connection ptcp:6642"
+      command: ovn-nbctl set-connection ptcp:6642
       register: centralconf2_result
 - name: perform OVN configuration on hosts
   hosts: ovirtnodes
@@ -63,6 +63,6 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: configure OVN VIF driver
-      shell: "vdsm-tool ovn-config {{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }} {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      command: vdsm-tool ovn-config "{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}" "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       register: vifconf_result
 ...
