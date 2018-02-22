@@ -97,6 +97,8 @@
 #        enabled: True
 #        state: started
 #        no_block: no
-#      with_items: bareos-fd bareos-sd
+#      with_items:
+#        - bareos-fd
+#        - bareos-sd
 
 ...
