@@ -9,6 +9,7 @@
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
+# TODO: write a suitable hvp_gluster_disks fact-finding module
 #    - name: gather Gluster-used disks
 #      hvp_gluster_disks: include_ssd=1
     - name: get common vars
@@ -18,10 +19,18 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: delete an iSCSI LUN
-      command: gluster-block delete blockshare/block0
+    - name: enumerate Gluster-block based iSCSI LUNs
+      command: gluster-block list blockshare
+      ignore_errors: yes
+      register: enumerateluns_result
+    - name: delete all iSCSI LUNs found
+      command: gluster-block delete blockshare/"{{ item }}"
       ignore_errors: yes
       register: deleteblock_result
+      with_items:
+        - "{{ enumerateluns_result.stdout_lines }}"
+      when:
+        - enumerateluns_result.rc == 0
 - name: Stop and unconfigure Gluster-block
   hosts: glusternodes
   remote_user: root
