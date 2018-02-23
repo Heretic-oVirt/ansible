@@ -26,7 +26,7 @@
     - name: delete all iSCSI LUNs found
       command: gluster-block delete blockshare/"{{ item }}"
       ignore_errors: yes
-      register: deleteblock_result
+      register: deleteluns_result
       with_items:
         - "{{ enumerateluns_result.stdout_lines }}"
       when:
