@@ -29,24 +29,32 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: create an iSCSI LUN
-      command: gluster-block create blockshare/block0 ha "{{ groups['glusternodes'] | length }}" auth enable "{{ groups['glusternodes'] | join(',') }}" 200GiB
+    - name: create iSCSI LUNs
+      command: gluster-block create blockshare/block"{{ item.0 }}" ha "{{ groups['glusternodes'] | length }}" auth enable "{{ groups['glusternodes'] | join(',') }}" "{{ item.1 }}"
       register: createblock_result
-    - name: extract iSCSI LUN username
-      set_fact:
-        lun_username: "{{ createblock_result.stdout | regex_search(username_regexp,'\\1') }}"
+      with_indexed_items:
+        - "{{ hvp_lun_sizes }}"
+    - name: extract iSCSI LUN usernames
+      set_fact: lun_usernames="{{ lun_usernames }} + [{{ createblock_result.results[item.0].stdout | regex_search(username_regexp,'\\1') }}]"
       vars:
         username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
-    - name: extract iSCSI LUN password
-      set_fact:
-        lun_password: "{{ createblock_result.stdout | regex_search(password_regexp,'\\1') }}"
+      with_indexed_items:
+        - "{{ createblock_result.results }}"
+    - name: extract iSCSI LUN passwords
+      set_fact: lun_passwords="{{ lun_passwords }} + [{{ createblock_result.results[item.0].stdout | regex_search(password_regexp,'\\1') }}]"
       vars:
         password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
-    - name: save iSCSI LUN username/password
+      with_indexed_items:
+        - "{{ createblock_result.results }}"
+    - name: save iSCSI LUN usernames/passwords
       copy:
         content: |
-          Username: {{ lun_username }}
-          Password: {{ lun_password }}
+          {% for username in lun_usernames %}
+          LUN number: {{ loop.index0 }}
+          Username: {{ lun_usernames[loop.index0] }}
+          Password: {{ lun_passwords[loop.index0] }}
+          
+          {% endfor %}
         dest: /root/etc/lun_credentials
         backup: yes
       delegate_to: localhost
