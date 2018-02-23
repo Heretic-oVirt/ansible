@@ -17,20 +17,127 @@
         gw4: "{{ hvp_gateway_ip }}"
         type: ethernet
         state: present
-    - name: add HVP repo
-      yum:
-        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-1.noarch.rpm
-        state: latest
-    - name: install the Bareos-related packages
+    - name: install YUM-related packages
       yum:
         name: "{{ item }}"
         state: latest
-      with_items: bareos-tools bareos-client bareos-director bareos-webui
-    - name: enable and start the Bareos-related services
+      with_items:
+        - yum-plugin-priorities
+        - deltarpm
+    - name: enable CentOS CR repo
+      command: yum-config-manager --enable cr
+      result: enablecentoscr_result
+    - name: customize EPEL repo inclusions
+      shell: "sed -i -e 's/epel-release,/epel-release,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,webalizer,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
+      register: epelrepoedit_result
+    - name: disable EPEL repo use of DNS-based balanced mirrors
+      shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
+      register: epelrepodirect_result
+    - name: add Psychotic repo
+      yum:
+        name: http://packages.psychotic.ninja/6/base/i386/RPMS/psychotic-release-1.0.0-1.el6.psychotic.noarch.rpm
+        state: latest
+    - name: limit Psychotic repo included files
+      command: yum-config-manager --save --setopt='psychotic.include=unrar*'
+      result: limitpsychotic_result
+    - name: enable Psychotic repo
+      command: yum-config-manager --enable psychotic
+      result: enablepsychotic_result
+    - name: add HVP release package
+      yum:
+        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-2.noarch.rpm
+        state: latest
+    - name: enable HVP RHGS-rebuild repo
+      command: yum-config-manager --enable hvp-rhgs-rebuild
+      result: enablehvprhgsrebuild_result
+      when: not hvp_orthodox_mode
+    - name: prefer HVP RHGS-rebuild repo
+      command: yum-config-manager --save --setopt='hvp-rhgs-rebuild.priority=50'
+      result: preferhvprhgsrebuild_result
+      when: not hvp_orthodox_mode
+    - name: enable HVP Openvswitch-rebuild repo
+      command: yum-config-manager --enable hvp-openvswitch-rebuild
+      result: enablehvpovsrebuild_result
+      when: not hvp_orthodox_mode
+    - name: prefer HVP Openvswitch-rebuild repo
+      command: yum-config-manager --save --setopt='hvp-openvswitch-rebuild.priority=50'
+      result: preferhvpovsrebuild_result
+      when: not hvp_orthodox_mode
+    - name: disable use of mirrors in all repos
+      shell: "sed -i -e 's/^mirrorlist/#mirrorlist/ ; s/^metalink/#metalink/ ; s/^#baseurl/baseurl/' $(find /etc/yum.repos.d -type f -name '*.repo' -print)"
+      result: disablemirrors_result
+    - name: enable use of deltarpm
+      command: yum-config-manager --save --setopt='deltarpm=1'
+      result: enabledeltarpm_result
+    - name: install HVP-recommended packages
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - ntpdate
+        - mcstrans
+        - stunnel
+        - symlinks
+        - dos2unix
+        - unix2dos
+        - screen
+        - telnet
+        - tree
+        - iptraf
+        - iptstate
+        - nss-tools
+        - patch
+        - expect
+        - ncompress
+        - libnl
+        - redhat-lsb
+        - haveged
+        - hping3
+        - p7zip
+        - p7zip-plugins
+        - unrar
+        - arj
+        - pwgen
+        - yum-cron
+        - yum-plugin-ps
+        - gdisk
+        - nmon
+        - dstat
+        - pdsh
+        - pdsh-rcmd-ssh
+    - name: enable and start HVP-recommended services
+      systemd:
+        name: "{{ item }}"
+        enabled: True
+        state: started
+        no_block: no
+      with_items:
+        - haveged
+    - name: disable and stop services
       systemd:
         name: "{{ item }}"
         enabled: False
         state: stopped
         no_block: no
-      with_items: bareos-fd bareos-dir
+      with_items:
+        - yum-cron
+    - name: install Bareos-related packages
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - bareos-tools
+        - bareos-client
+        - bareos-director
+        - bareos-webui
+#    - name: enable and start Bareos-related services
+#      systemd:
+#        name: "{{ item }}"
+#        enabled: True
+#        state: started
+#        no_block: no
+#      with_items:
+#        - bareos-fd
+#        - bareos-dir
+# TODO: configure the Engine appliance OS like in our Kickstart-based installations
 ...
