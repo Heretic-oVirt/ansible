@@ -43,6 +43,12 @@ hvp_backup_size: "1024GB"
 hvp_backup_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1536k"
 
+# HVP Gluster-block settings
+hvp_lun_sizes:
+  - 200GiB
+  - 300GiB
+  - 450GiB
+
 # Engine credentials:
 url: https://celestia.mgmt.private/ovirt-engine/api
 username: admin@internal
