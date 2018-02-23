@@ -26,49 +26,49 @@
         - deltarpm
     - name: enable CentOS CR repo
       command: yum-config-manager --enable cr
-      result: enablecentoscr_result
+      register: enablecentoscr_result
     - name: customize EPEL repo inclusions
       shell: "sed -i -e 's/epel-release,/epel-release,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,webalizer,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepoedit_result
     - name: disable EPEL repo use of DNS-based balanced mirrors
       shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepodirect_result
-    - name: add Psychotic repo
+    - name: add Psychotic release package
       yum:
         name: http://packages.psychotic.ninja/6/base/i386/RPMS/psychotic-release-1.0.0-1.el6.psychotic.noarch.rpm
         state: latest
     - name: limit Psychotic repo included files
       command: yum-config-manager --save --setopt='psychotic.include=unrar*'
-      result: limitpsychotic_result
+      register: limitpsychotic_result
     - name: enable Psychotic repo
       command: yum-config-manager --enable psychotic
-      result: enablepsychotic_result
+      register: enablepsychotic_result
     - name: add HVP release package
       yum:
         name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-2.noarch.rpm
         state: latest
     - name: enable HVP RHGS-rebuild repo
       command: yum-config-manager --enable hvp-rhgs-rebuild
-      result: enablehvprhgsrebuild_result
+      register: enablehvprhgsrebuild_result
       when: not hvp_orthodox_mode
     - name: prefer HVP RHGS-rebuild repo
       command: yum-config-manager --save --setopt='hvp-rhgs-rebuild.priority=50'
-      result: preferhvprhgsrebuild_result
+      register: preferhvprhgsrebuild_result
       when: not hvp_orthodox_mode
     - name: enable HVP Openvswitch-rebuild repo
       command: yum-config-manager --enable hvp-openvswitch-rebuild
-      result: enablehvpovsrebuild_result
+      register: enablehvpovsrebuild_result
       when: not hvp_orthodox_mode
     - name: prefer HVP Openvswitch-rebuild repo
       command: yum-config-manager --save --setopt='hvp-openvswitch-rebuild.priority=50'
-      result: preferhvpovsrebuild_result
+      register: preferhvpovsrebuild_result
       when: not hvp_orthodox_mode
     - name: disable use of mirrors in all repos
       shell: "sed -i -e 's/^mirrorlist/#mirrorlist/ ; s/^metalink/#metalink/ ; s/^#baseurl/baseurl/' $(find /etc/yum.repos.d -type f -name '*.repo' -print)"
-      result: disablemirrors_result
+      register: disablemirrors_result
     - name: enable use of deltarpm
       command: yum-config-manager --save --setopt='deltarpm=1'
-      result: enabledeltarpm_result
+      register: enabledeltarpm_result
     - name: install HVP-recommended packages
       yum:
         name: "{{ item }}"
@@ -105,6 +105,184 @@
         - dstat
         - pdsh
         - pdsh-rcmd-ssh
+    - name: install Bareos-related packages
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - bareos-tools
+        - bareos-client
+        - bareos-director
+        - bareos-webui
+# TODO: configure the Engine appliance OS like in our Kickstart-based installations
+    - name: configure YUM-cron
+      shell: "sed -i -e 's/^update_messages\s.*$/update_messages = no/' -e 's/^download_updates\s.*$/download_updates = no/' -e 's/^apply_updates\s.*$/apply_updates = no/' -e 's/^emit_via\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
+      register: confyumcron_result
+    - name: configure kernel packages to be kept
+      command: yum-config-manager --save --setopt='installonly_limit=3'
+      register: keepkernelrpm_result
+    - name: configure kernel I/O scheduler policy
+      # TODO: should not skip if line already contains elevator= directive
+      lineinfile:
+        state: present
+        dest: /etc/default/grub
+        backrefs: yes
+        regexp: '^(GRUB_CMDLINE_LINUX=(?!.*elevator)\"[^\"]+)(\".*)'
+        line: '\1 elevator=deadline\2'
+      register: kernelio_result
+    - name: update GRUB menu
+      # TODO: check path validity in case of EFI machine
+      command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      register: updategrubmenu_result
+      when: kernelio_result.changed
+    - name: set kernel parameters
+      sysctl:
+        sysctl_file: "{{ pfrag }}"
+        state: present
+        sysctl_set: yes
+        reload: yes
+        name: "{{ pname }}"
+        value: "{{ pvalue }}"
+      with_items:
+        - { pname: 'kernel.printk', pvalue: '1', pfrag: '/etc/sysctl.d/console-log.conf' }
+        - { pname: 'kernel.panic', pvalue: '5', pfrag: '/etc/sysctl.d/panic.conf' }
+    - name: configure boot-time time-sync sources by means of NTPdate
+      copy:
+        content: |
+          0.centos.pool.ntp.org
+        dest: /etc/ntp/step-tickers
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+    - name: create SELinux local modules directory
+      file:
+        path: /etc/selinux/local
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+    - name: create a SELinux local module for NTPdate
+      copy:
+        content: |
+          
+          module myntpdate 8.0;
+          
+          require {
+                  type ntpd_t;
+                  type hwclock_exec_t;
+                  type adjtime_t;
+                  class file { open read write execute execute_no_trans getattr };
+                  class netlink_audit_socket create;
+          }
+          
+          #============= ntpd_t ==============
+          allow ntpd_t hwclock_exec_t:file { open read execute execute_no_trans getattr };
+          allow ntpd_t self:netlink_audit_socket create;
+          allow ntpd_t adjtime_t:file { open read getattr write };
+        dest: /etc/selinux/local/myntpdate.te
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+    - name: compile and load the SELinux local module for NTPdate
+      chdir: /etc/selinux/local
+      command: "{{ secommand }}"
+      register: compilentpdatepolicy_result
+      with_items:
+        - { secommand: 'checkmodule -M -m -o myntpdate.mod myntpdate.te' }
+        - { secommand: 'semodule_package -o myntpdate.pp -m myntpdate.mod' }
+        - { secommand: 'semodule -i myntpdate.pp' }
+    - name: enable NTPdate on boot
+      # TODO: should enable only if all in the registered values above are compilentpdatepolicy_result.results[*].rc==0
+      systemd:
+        name: ntpdate
+        enabled: yes
+    - name: configure OpenSSH server
+      lineinfile:
+        state: present
+        dest: /etc/ssh/sshd_config
+        insertbefore: BOF
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
+      register: sshdconf_result
+      with_items:
+        - { regexp: '^MaxAuthTries', line: 'MaxAuthTries 3' }
+        - { regexp: '^UseDNS', line: 'UseDNS no' }
+        - { regexp: '^Banner', line: 'Banner /etc/issue.net' }
+    - name: restart OpenSSH to apply configuration
+      # TODO: should restart only if at least one in the registered values above is sshdconf_result.results[*].changed
+      systemd:
+        name: sshd
+        state: restarted
+    - name: configure use of at/cron facilities
+      copy:
+        content: |
+          root
+        dest: "{{ item.path }}"
+        owner: root
+        group: root
+        mode: 0600
+        backup: no
+      with_items:
+        - { path: '/etc/at.allow' }
+        - { path: '/etc/cron.allow' }
+    - name: sanitize use of at/cron facilities
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items:
+        - { path: '/etc/at.deny' }
+        - { path: '/etc/cron.deny' }
+    - name: configure issue message
+      copy:
+        content: |
+          
+          WARNING: THIS CONSOLE IS RESERVED FOR SYSTEM ADMINISTRATION ONLY.
+          EVERY ACCESS IS THOROUGHLY LOGGED.
+          THERE IS NO PRIVACY PROTECTION ON LOGGED DATA.
+          VIOLATIONS WILL BE PROSECUTED.
+          ACCESS IMPLIES ACCEPTANCE OF THE ABOVE CONDITIONS.
+          
+        dest: /etc/issue
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+    - name: configure issue.net message
+      copy:
+        content: |
+          
+          Access is reserved to explicitly authorized personnel only.
+          Violations will be prosecuted.
+          Every access is thoroughly logged.
+          This access service provides no privacy protection on logged data.
+          Access through this service implies acceptance of the above conditions.
+          
+        dest: /etc/issue.net
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+    - name: configure motd message
+      copy:
+        content: |
+          
+                                            WARNING
+          
+          This computer is the private property of his owners.
+          Permission of use must be individually and explicitly obtained in written form.
+          If you have not been authorized, you must immediately terminate your connection.
+          Violations will be prosecuted.
+          Use of this computer is thoroughly logged.
+          There is no privacy protection on logged data.
+          Continued use of this computer implies acceptance of the above conditions.
+          
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
     - name: enable and start HVP-recommended services
       systemd:
         name: "{{ item }}"
@@ -121,15 +299,6 @@
         no_block: no
       with_items:
         - yum-cron
-    - name: install Bareos-related packages
-      yum:
-        name: "{{ item }}"
-        state: latest
-      with_items:
-        - bareos-tools
-        - bareos-client
-        - bareos-director
-        - bareos-webui
 #    - name: enable and start Bareos-related services
 #      systemd:
 #        name: "{{ item }}"
@@ -139,5 +308,4 @@
 #      with_items:
 #        - bareos-fd
 #        - bareos-dir
-# TODO: configure the Engine appliance OS like in our Kickstart-based installations
 ...
