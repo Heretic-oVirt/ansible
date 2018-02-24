@@ -432,15 +432,6 @@
         no_block: no
       with_items:
         - yum-cron
-#    - name: enable and start Bareos-related services
-#      systemd:
-#        name: "{{ item }}"
-#        enabled: True
-#        state: started
-#        no_block: no
-#      with_items:
-#        - bareos-fd
-#        - bareos-dir
     - name: create oVirt-shell configuration file
       copy:
         content: |
