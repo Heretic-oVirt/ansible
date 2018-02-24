@@ -29,7 +29,7 @@ Please note that further (specific) TODO lines still exist inside single YAML/Ji
 
 * in roles/ovirtengine/ovirtnetworks.yaml: create a couple of OVN logical networks
 
-* in roles/ovirtengine/ovn.yaml: add oVirt networks for gluster (to marked as Gluster network), lan (needed for CTDB) and internal zones if present
+* in roles/ovirtengine/ovirtnetworks.yaml: add oVirt networks for gluster (to marked as Gluster network), lan (needed for CTDB) and internal zones if present
 
 * in roles/glusternodes/templates/smb.j2: lower log level to 0 general and vfs-glusterfs too
 
