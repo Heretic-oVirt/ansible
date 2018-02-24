@@ -28,7 +28,7 @@
       command: yum-config-manager --enable cr
       register: enablecentoscr_result
     - name: customize EPEL repo inclusions
-      shell: "sed -i -e 's/epel-release,/epel-release,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,webalizer,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
+      shell: "sed -i -e 's/epel-release,/epel-release,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepoedit_result
     - name: disable EPEL repo use of DNS-based balanced mirrors
       shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
@@ -114,7 +114,6 @@
         - bareos-client
         - bareos-director
         - bareos-webui
-# TODO: configure the Engine appliance OS like in our Kickstart-based installations
     - name: configure YUM-cron
       shell: "sed -i -e 's/^update_messages\s.*$/update_messages = no/' -e 's/^download_updates\s.*$/download_updates = no/' -e 's/^apply_updates\s.*$/apply_updates = no/' -e 's/^emit_via\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
       register: confyumcron_result
@@ -123,9 +122,10 @@
       register: keepkernelrpm_result
     - name: configure kernel I/O scheduler policy
       # TODO: should not skip if line already contains elevator= directive
+      # TODO: enact immediately if changed
       lineinfile:
         state: present
-        dest: /etc/default/grub
+        path: /etc/default/grub
         backrefs: yes
         regexp: '^(GRUB_CMDLINE_LINUX=(?!.*elevator)\"[^\"]+)(\".*)'
         line: '\1 elevator=deadline\2'
@@ -135,14 +135,18 @@
       command: grub2-mkconfig -o /boot/grub2/grub.cfg
       register: updategrubmenu_result
       when: kernelio_result.changed
-    - name: set kernel parameters
+    - name: disable Ctrl-Alt-Del
+      systemd:
+        name: ctrl-alt-del.target
+        masked: yes
+    - name: set generic kernel parameters
       sysctl:
-        sysctl_file: "{{ pfrag }}"
+        sysctl_file: "{{ item.pfrag }}"
         state: present
         sysctl_set: yes
         reload: yes
-        name: "{{ pname }}"
-        value: "{{ pvalue }}"
+        name: "{{ item.pname }}"
+        value: "{{ item.pvalue }}"
       with_items:
         - { pname: 'kernel.printk', pvalue: '1', pfrag: '/etc/sysctl.d/console-log.conf' }
         - { pname: 'kernel.panic', pvalue: '5', pfrag: '/etc/sysctl.d/panic.conf' }
@@ -187,12 +191,12 @@
         backup: no
     - name: compile and load the SELinux local module for NTPdate
       chdir: /etc/selinux/local
-      command: "{{ secommand }}"
+      command: "{{ item }}"
       register: compilentpdatepolicy_result
       with_items:
-        - { secommand: 'checkmodule -M -m -o myntpdate.mod myntpdate.te' }
-        - { secommand: 'semodule_package -o myntpdate.pp -m myntpdate.mod' }
-        - { secommand: 'semodule -i myntpdate.pp' }
+        - 'checkmodule -M -m -o myntpdate.mod myntpdate.te'
+        - 'semodule_package -o myntpdate.pp -m myntpdate.mod'
+        - 'semodule -i myntpdate.pp'
     - name: enable NTPdate on boot
       # TODO: should enable only if all in the registered values above are compilentpdatepolicy_result.results[*].rc==0
       systemd:
@@ -201,7 +205,7 @@
     - name: configure OpenSSH server
       lineinfile:
         state: present
-        dest: /etc/ssh/sshd_config
+        path: /etc/ssh/sshd_config
         insertbefore: BOF
         regexp: "{{ item.regex }}"
         line: "{{ item.line }}"
@@ -283,6 +287,135 @@
         group: root
         mode: 0644
         backup: no
+    - name: configure ABRT to cover also non-packaged programs
+      # TODO: make sure that all GPG keys for installed repositories are listed under /etc/pki/rpm-gpg
+      lineinfile:
+        state: present
+        path: /etc/abrt/abrt-action-save-package-data.conf
+        backrefs: no
+        regexp: '^ProcessUnpackaged'
+        line: 'ProcessUnpackaged = yes'
+      register: reconfabrt_result
+    - name: reconfigure libreport to disable all email notifications
+      replace:
+        path: /etc/libreport/events.d/mailx_event.conf
+        regexp: '^([^#].*)$'
+        replace: '#\1'
+      register: reconflibreport_result
+    - name: configure Apache
+      lineinfile:
+        state: present
+        path: "{{ item.path }}"
+        insertbefore: "{{ item.before }}
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
+      register: apacheconf_result
+      with_items:
+        - { path: '/etc/httpd/conf/httpd.conf', before: 'BOF', regexp: '^ServerTokens', line: 'ServerTokens ProductOnly' }
+        - { path: '/etc/httpd/conf/httpd.conf', before: '^ServerTokens', regexp: '^ServerSignature', line: 'ServerSignature Off' }
+        - { path: '/etc/httpd/conf/httpd.conf', before: '^ServerTokens', regexp: '^TraceEnable', line: 'TraceEnable Off' }
+        - { path: '/etc/httpd/conf.d/ssl.conf', before: 'BOF', regexp: '^SSLProtocol', line: 'SSLProtocol all -SSLv2 -SSLv3' }
+        - { path: '/etc/httpd/conf.d/ssl.conf', before: '^SSLProtocol', regexp: '^SSLCipherSuite', line: 'SSLCipherSuite ALL:!EXP:!NULL:!ADH:!LOW:!RC4' }
+    - name: restart Apache to apply configuration
+      # TODO: should restart only if at least one in the registered values above is apacheconf_result.results[*].changed
+      systemd:
+        name: httpd
+        state: restarted
+    - name: add virtual-guest-specific udev rules for QEMU block devices
+      copy:
+        content: |
+          #
+          # Qemu block devices timeout settings
+          #
+          ACTION=="add|change", SUBSYSTEMS=="block", ATTRS{model}=="QEMU_HARDDISK", RUN+="/bin/sh -c 'echo 180 >/sys\$DEVPATH/timeout'"
+        dest: /etc/udev/rules.d/99-qemu-block-timeout.rules
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+        register: qemudev_result
+        when:
+          - ansible_virtualization_role == "guest"
+    - name: add virtual-guest-specific udev rules for VirtIO block devices
+      copy:
+        content: |
+          #
+          # VirtIO block devices settings
+          #
+          ACTION=="add|change", KERNEL=="vd*[!0-9]", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ATTR{queue/nr_requests}="8"
+          ACTION=="add|change", KERNEL=="vd*[!0-9]", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ATTR{bdi/read_ahead_kb}="4096"
+        dest: /etc/udev/rules.d/99-virtio-block.rules
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+        register: virtiodev_result
+        when:
+          - ansible_virtualization_role == "guest"
+    - name: apply virtual-guest-specific udev rules for block devices
+      command: udevadm trigger --attr-match=subsystem=block
+      register: udevblocktrigger_result
+      when: qemudev_result.changed or virtiodev_result.changed
+    - name: set virtual-guest-specific kernel parameters
+      sysctl:
+        sysctl_file: "{{ item.pfrag }}"
+        state: present
+        sysctl_set: yes
+        reload: yes
+        name: "{{ item.pname }}"
+        value: "{{ item.pvalue }}"
+      with_items:
+        - { pname: 'kernel.sched_min_granularity_ns', pvalue: '10000000', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'kernel.sched_wakeup_granularity_ns', pvalue: '15000000', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'vm.dirty_background_ratio', pvalue: '10', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'vm.dirty_ratio', pvalue: '40', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'vm.dirty_expire_centisecs', pvalue: '500', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'vm.dirty_writeback_centisecs', pvalue: '100', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'vm.swappiness', pvalue: '30', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'kernel.sched_migration_cost', pvalue: '5000000', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+      when:
+        - ansible_virtualization_role == "guest"
+    - name: configure logrotate
+      lineinfile:
+        state: present
+        path: "{{ item.path }}"
+        insertbefore: "{{ item.before }}"
+        regexp: "{{ item.regex }}"
+        line: "{{ item.line }}"
+      register: logrotateconf_result
+      with_items:
+        - { path: '/etc/logrotate.conf', before: 'BOF', regexp: '^rotate', line: 'rotate 312' }
+        - { path: '/etc/logrotate.conf', before: '^rotate', regexp: '^compress', line: 'compress' }
+    - name: configure audit
+      lineinfile:
+        state: present
+        path: /etc/audit/audit.rules
+        insertbefore: BOF
+        regexp: '^-b'
+        line: '-b 8192'
+      register: auditconf_result
+    - name: restart auditd to apply configuration
+      systemd:
+        name: auditd
+        state: restarted
+      when: auditconf_result.changed
+# TODO: ensure proper general firewalld configuration
+    - name: configure firewalld to log all denied connections
+      # TODO: disable for production use
+      command: firewall-cmd --set-log-denied=all
+      register: firewalldlogall_result
+    - name: configure mail aliases
+      lineinfile:
+        state: present
+        path: /etc/aliases
+        insertafter: EOF
+        regexp: '^monitoring:'
+        line: "monitoring:	{{ hvp_admin_username }}"
+      register: aliases_result
+    - name: apply mail aliases
+      command: newaliases
+      register: newaliases_result
+      when: aliases_result.changed
     - name: enable and start HVP-recommended services
       systemd:
         name: "{{ item }}"
@@ -291,7 +424,7 @@
         no_block: no
       with_items:
         - haveged
-    - name: disable and stop services
+    - name: disable and stop unneeded services
       systemd:
         name: "{{ item }}"
         enabled: False
@@ -308,4 +441,91 @@
 #      with_items:
 #        - bareos-fd
 #        - bareos-dir
+    - name: create oVirt-shell configuration file
+      copy:
+        content: |
+          [cli]
+          autoconnect = True
+          autopage = False
+          [ovirt-shell]
+          username = {{ username }}
+          timeout = None
+          extended_prompt = False
+          url = {{ url }}
+          insecure = False
+          renew_session = True
+          filter = False
+          session_timeout = None
+          ca_file = {{ ca_file }}
+          dont_validate_cert_chain = False
+          key_file = None
+          password = test
+          cert_file = None
+        dest: /root/.ovirtshellrc
+        owner: root
+        group: root
+        mode: 0600
+        backup: no
+    - name: customize root home subdirectories
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+      with:
+        - { path: "/root/backup" }
+        - { path: "/root/bin" }
+        - { path: "/root/etc" }
+        - { path: "/root/log" }
+        - { path: "/root/tmp" }
+    - name: create configuration backup list
+      copy:
+        content: |
+          /boot/grub2
+          /etc
+          /var/www/html
+          /usr/local/bin
+          /usr/local/sbin
+          /usr/local/etc
+          /root/bin
+          /root/etc
+          /root/log
+          /root/.[^ekmn]?*
+        dest: /root/etc/backup.list
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+    - name: create configuration backup script
+      copy:
+        content: |
+          #!/bin/bash
+          tar -czf /root/backup/\$(hostname)-\$(date '+%Y-%m-%d')-conf.tar.gz \$(cat /root/etc/backup.list)
+        dest: /root/bin/backup-conf
+        owner: root
+        group: root
+        mode: 0755
+        backup: no
+    - name: create log backup script
+      copy:
+        content: |
+          #!/bin/bash
+          tar -czf /root/backup/\$(hostname)-\$(date '+%Y-%m-%d')-log.tar.gz /root/etc /root/log \$(find /var/log/ -type f ! -iname '*z' -print)
+        dest: /root/bin/backup-log
+        owner: root
+        group: root
+        mode: 0755
+        backup: no
+    - name: initialize system administration journal
+      copy:
+        content: |
+          {{ lookup('pipe', 'date +%Y%m%d') }}
+          *) configured {{ lookup('pipe', 'lsb_release -i -r -s') }} {{ lookup('pipe', 'uname -m') }} from Ansible
+          
+        dest: /root/log/sysadm.log
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
 ...
