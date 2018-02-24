@@ -95,18 +95,4 @@
     - name: configure local root user
       shell: "echo -e '\n{{ ansible_ssh_pass }}\n{{ ansible_ssh_pass }}\n' | smbpasswd -s -a root"
       register: smbpasswd_result
-#- name: Configure and start Bareos
-#  hosts: glusternodes
-#  remote_user: root
-#  tasks:
-#    - name: enable and start the Bareos-related services
-#      systemd:
-#        name: "{{ item }}"
-#        enabled: True
-#        state: started
-#        no_block: no
-#      with_items:
-#        - bareos-fd
-#        - bareos-sd
-
 ...
