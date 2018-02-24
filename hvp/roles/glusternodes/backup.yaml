@@ -1,0 +1,32 @@
+---
+- name: Configure and start Bareos on Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+  # TODO: configure Bareos on Engine
+  # TODO: prepare Bareos DB on database server vm
+  # TODO: configure bareos-webui on Engine
+    - name: enable and start Bareos-related services
+      systemd:
+        name: "{{ item }}"
+        enabled: True
+        state: started
+        no_block: no
+      with_items:
+        - bareos-fd
+        - bareos-dir
+- name: Configure and start Bareos on nodes
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+  # TODO: configure Bareos on nodes
+    - name: enable and start Bareos-related services
+      systemd:
+        name: "{{ item }}"
+        enabled: True
+        state: started
+        no_block: no
+      with_items:
+        - bareos-fd
+        - bareos-sd
+...
