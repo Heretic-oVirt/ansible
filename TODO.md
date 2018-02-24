@@ -1,6 +1,7 @@
 # TODO list for Ansible files
 
-The following TODO items are taken stright from Kickstart comments in heresiarch.ks (where the Ansible files were created initially) which were written outside of the relevant files:
+The following TODO items are taken stright from Kickstart comments in heresiarch.ks (where the Ansible files were created initially) which were written outside of the relevant files.
+Please note that further (specific) TODO lines still exist inside single YAML/Jinja2 files.
 
 * either remove the password-related variables from global group var files or at least encrypt them with Ansible Vault
 
@@ -8,9 +9,9 @@ The following TODO items are taken stright from Kickstart comments in heresiarch
 
 * remove roles/glusternodes/test_plugins/custom.py when the equalto test in Jinja2 selectattr will be supported (added in Jinja2 2.8)
 
-* add NFS-Ganesha and Gluster-block to roles/glusternodes/glustercleanup.yaml when ready
+* add NFS-Ganesha to roles/glusternodes/glustercleanup.yaml when ready
 
-* add NFS-Ganesha and Gluster-block to roles/glusternodes/ctdb.yaml when ready
+* add NFS-Ganesha to roles/glusternodes/ctdb.yaml when ready
 
 * add support for VLAN eth (not only plain and bond) to roles/ovirtnodes/ovirtnodes.yaml
 
@@ -24,18 +25,16 @@ The following TODO items are taken stright from Kickstart comments in heresiarch
 
 * add support for BMC options in roles/ovirtengine/ovirtengine.yaml
 
-* in roles/ovirtengine/enginevmreconf.yaml: add generic configuration of Engine vm (take it from other HVP Kickstarts)
+* in roles/ovirtengine/enginevmreconf.yaml: add Bareos configuration both on engine and on nodes - maybe separate into independent backup.yaml playbook
 
-* in roles/ovirtengine/enginevmreconf.yaml: add Bareos configuration both on engine and on nodes - maybe separate into independent bareos.yaml playbook
+* in roles/ovirtengine/ovirtnetworks.yaml: create a couple of OVN logical networks
 
-* in roles/ovirtengine/ovn.yaml: create a couple of OVN logical networks
-
-* in roles/ovirtengine/ovn.yaml: add oVirt networks for lan (needed for CTDB) and internal zones if present
+* in roles/ovirtengine/ovn.yaml: add oVirt networks for gluster (to marked as Gluster network), lan (needed for CTDB) and internal zones if present
 
 * in roles/glusternodes/templates/smb.j2: lower log level to 0 general and vfs-glusterfs too
 
-* in roles/glusternodes/adjoin.yaml: add nfs principal and extract/propagate keytab for kerberized NFSv4 Ganesha operations
+* in roles/glusternodes/adjoin.yaml: add nfs principal and extract/propagate keytab for kerberized NFSv4 Ganesha operations when ready
 
-* in top hvp.yaml: add provisioning of vms (AD DC, printer server, DB server, application server, firewall/proxy and virtual desktops) from scratch (kickstart based installation - not from template) and insert before adjoin step (to allow for AD DC vm creation)
+* in roles/ovirtengine/ovirtvms.yaml: finish provisioning of vms (AD DC, printer server, DB server, application server, firewall/proxy and virtual desktops) from scratch (kickstart based installation - not from template)
 
 
