@@ -190,7 +190,8 @@
         mode: 0644
         backup: no
     - name: compile and load the SELinux local module for NTPdate
-      chdir: /etc/selinux/local
+      args:
+        chdir: /etc/selinux/local
       command: "{{ item }}"
       register: compilentpdatepolicy_result
       with_items:
@@ -464,7 +465,7 @@
         owner: root
         group: root
         mode: 0755
-      with:
+      with_items:
         - { path: "/root/backup" }
         - { path: "/root/bin" }
         - { path: "/root/etc" }
