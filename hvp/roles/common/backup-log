@@ -1,0 +1,2 @@
+#!/bin/bash
+tar -czf /root/backup/$(hostname)-$(date '+%Y-%m-%d')-log.tar.gz /root/etc /root/log $(find /var/log/ -type f ! -iname '*z' -print)
