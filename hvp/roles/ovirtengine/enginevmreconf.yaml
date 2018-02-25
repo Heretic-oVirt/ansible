@@ -168,22 +168,7 @@
         mode: 0755
     - name: create a SELinux local module for NTPdate
       copy:
-        content: |
-          
-          module myntpdate 8.0;
-          
-          require {
-                  type ntpd_t;
-                  type hwclock_exec_t;
-                  type adjtime_t;
-                  class file { open read write execute execute_no_trans getattr };
-                  class netlink_audit_socket create;
-          }
-          
-          #============= ntpd_t ==============
-          allow ntpd_t hwclock_exec_t:file { open read execute execute_no_trans getattr };
-          allow ntpd_t self:netlink_audit_socket create;
-          allow ntpd_t adjtime_t:file { open read getattr write };
+        src: ../common/files/myntpdate.te
         dest: /etc/selinux/local/myntpdate.te
         owner: root
         group: root
@@ -239,50 +224,25 @@
       with_items:
         - { path: '/etc/at.deny' }
         - { path: '/etc/cron.deny' }
-    - name: configure issue message
+    - name: customize issue message
       copy:
-        content: |
-          
-          WARNING: THIS CONSOLE IS RESERVED FOR SYSTEM ADMINISTRATION ONLY.
-          EVERY ACCESS IS THOROUGHLY LOGGED.
-          THERE IS NO PRIVACY PROTECTION ON LOGGED DATA.
-          VIOLATIONS WILL BE PROSECUTED.
-          ACCESS IMPLIES ACCEPTANCE OF THE ABOVE CONDITIONS.
-          
+        src: ../common/files/issue
         dest: /etc/issue
         owner: root
         group: root
         mode: 0644
         backup: no
-    - name: configure issue.net message
+    - name: customize issue.net message
       copy:
-        content: |
-          
-          Access is reserved to explicitly authorized personnel only.
-          Violations will be prosecuted.
-          Every access is thoroughly logged.
-          This access service provides no privacy protection on logged data.
-          Access through this service implies acceptance of the above conditions.
-          
+        src: ../common/files/issue.net
         dest: /etc/issue.net
         owner: root
         group: root
         mode: 0644
         backup: no
-    - name: configure motd message
+    - name: customize motd message
       copy:
-        content: |
-          
-                                            WARNING
-          
-          This computer is the private property of his owners.
-          Permission of use must be individually and explicitly obtained in written form.
-          If you have not been authorized, you must immediately terminate your connection.
-          Violations will be prosecuted.
-          Use of this computer is thoroughly logged.
-          There is no privacy protection on logged data.
-          Continued use of this computer implies acceptance of the above conditions.
-          
+        src: ../common/files/motd
         dest: /etc/motd
         owner: root
         group: root
@@ -324,11 +284,7 @@
         state: restarted
     - name: add virtual-guest-specific udev rules for QEMU block devices
       copy:
-        content: |
-          #
-          # Qemu block devices timeout settings
-          #
-          ACTION=="add|change", SUBSYSTEMS=="block", ATTRS{model}=="QEMU_HARDDISK", RUN+="/bin/sh -c 'echo 180 >/sys\$DEVPATH/timeout'"
+        src: ../common/files/99-qemu-block-timeout.rules
         dest: /etc/udev/rules.d/99-qemu-block-timeout.rules
         owner: root
         group: root
@@ -339,12 +295,7 @@
           - ansible_virtualization_role == "guest"
     - name: add virtual-guest-specific udev rules for VirtIO block devices
       copy:
-        content: |
-          #
-          # VirtIO block devices settings
-          #
-          ACTION=="add|change", KERNEL=="vd*[!0-9]", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ATTR{queue/nr_requests}="8"
-          ACTION=="add|change", KERNEL=="vd*[!0-9]", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ATTR{bdi/read_ahead_kb}="4096"
+        src: ../common/files/99-virtio-block.rules
         dest: /etc/udev/rules.d/99-virtio-block.rules
         owner: root
         group: root
@@ -434,25 +385,8 @@
       with_items:
         - yum-cron
     - name: create oVirt-shell configuration file
-      copy:
-        content: |
-          [cli]
-          autoconnect = True
-          autopage = False
-          [ovirt-shell]
-          username = {{ username }}
-          timeout = None
-          extended_prompt = False
-          url = {{ url }}
-          insecure = False
-          renew_session = True
-          filter = False
-          session_timeout = None
-          ca_file = {{ ca_file }}
-          dont_validate_cert_chain = False
-          key_file = None
-          password = test
-          cert_file = None
+      template:
+        src: templates/ovirtshellrc.j2
         dest: /root/.ovirtshellrc
         owner: root
         group: root
@@ -491,9 +425,7 @@
         backup: no
     - name: create configuration backup script
       copy:
-        content: |
-          #!/bin/bash
-          tar -czf /root/backup/$(hostname)-$(date '+%Y-%m-%d')-conf.tar.gz $(cat /root/etc/backup.list)
+        src: ../common/files/backup-conf
         dest: /root/bin/backup-conf
         owner: root
         group: root
@@ -501,9 +433,7 @@
         backup: no
     - name: create log backup script
       copy:
-        content: |
-          #!/bin/bash
-          tar -czf /root/backup/$(hostname)-$(date '+%Y-%m-%d')-log.tar.gz /root/etc /root/log $(find /var/log/ -type f ! -iname '*z' -print)
+        src: ../common/files/backup-log
         dest: /root/bin/backup-log
         owner: root
         group: root
