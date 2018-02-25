@@ -41,6 +41,7 @@
         enabled: False
         state: stopped
         no_block: no
+      ignore_errors: yes
 - name: Stop and unconfigure CTDB
   hosts: glusternodes
   remote_user: root
