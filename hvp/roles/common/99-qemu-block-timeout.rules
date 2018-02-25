@@ -1,0 +1,4 @@
+#
+# Qemu block devices timeout settings
+#
+ACTION=="add|change", SUBSYSTEMS=="block", ATTRS{model}=="QEMU_HARDDISK", RUN+="/bin/sh -c 'echo 180 >/sys\$DEVPATH/timeout'"
