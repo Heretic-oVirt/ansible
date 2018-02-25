@@ -115,7 +115,7 @@
         - bareos-director
         - bareos-webui
     - name: configure YUM-cron
-      shell: "sed -i -e 's/^update_messages\s.*$/update_messages = no/' -e 's/^download_updates\s.*$/download_updates = no/' -e 's/^apply_updates\s.*$/apply_updates = no/' -e 's/^emit_via\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
+      shell: "sed -i -e 's/^update_messages\\s.*$/update_messages = no/' -e 's/^download_updates\\s.*$/download_updates = no/' -e 's/^apply_updates\\s.*$/apply_updates = no/' -e 's/^emit_via\\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
       register: confyumcron_result
     - name: configure kernel packages to be kept
       command: yum-config-manager --save --setopt='installonly_limit=3'
@@ -492,7 +492,7 @@
       copy:
         content: |
           #!/bin/bash
-          tar -czf /root/backup/\$(hostname)-\$(date '+%Y-%m-%d')-conf.tar.gz \$(cat /root/etc/backup.list)
+          tar -czf /root/backup/$(hostname)-$(date '+%Y-%m-%d')-conf.tar.gz $(cat /root/etc/backup.list)
         dest: /root/bin/backup-conf
         owner: root
         group: root
@@ -502,7 +502,7 @@
       copy:
         content: |
           #!/bin/bash
-          tar -czf /root/backup/\$(hostname)-\$(date '+%Y-%m-%d')-log.tar.gz /root/etc /root/log \$(find /var/log/ -type f ! -iname '*z' -print)
+          tar -czf /root/backup/$(hostname)-$(date '+%Y-%m-%d')-log.tar.gz /root/etc /root/log $(find /var/log/ -type f ! -iname '*z' -print)
         dest: /root/bin/backup-log
         owner: root
         group: root
