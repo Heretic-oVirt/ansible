@@ -24,7 +24,7 @@
       ignore_errors: yes
       register: enumerateluns_result
     - name: delete all iSCSI LUNs found
-      command: gluster-block delete blockshare/"{{ item }}"
+      command: "gluster-block delete blockshare/{{ item }}"
       ignore_errors: yes
       register: deleteluns_result
       with_items:
@@ -69,7 +69,7 @@
         enabled: False
         state: stopped
         no_block: no
-   - name: copy LVM cleanup helper script
+    - name: copy LVM cleanup helper script
       copy:
         src: lvm-cleanup.sh
         dest: /usr/local/sbin/lvm-cleanup.sh
