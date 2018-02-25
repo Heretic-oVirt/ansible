@@ -1,0 +1,15 @@
+
+module myntpdate 8.0;
+
+require {
+        type ntpd_t;
+        type hwclock_exec_t;
+        type adjtime_t;
+        class file { open read write execute execute_no_trans getattr };
+        class netlink_audit_socket create;
+}
+
+#============= ntpd_t ==============
+allow ntpd_t hwclock_exec_t:file { open read execute execute_no_trans getattr };
+allow ntpd_t self:netlink_audit_socket create;
+allow ntpd_t adjtime_t:file { open read getattr write };
