@@ -30,7 +30,7 @@
   remote_user: root
   tasks:
     - name: create iSCSI LUNs
-      command: gluster-block create blockshare/block"{{ item.0 }}" ha "{{ groups['glusternodes'] | length }}" auth enable "{{ groups['glusternodes'] | join(',') }}" "{{ item.1 }}"
+      command: "gluster-block create blockshare/block{{ item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ item.1 }}"
       register: createblock_result
       with_indexed_items:
         - "{{ hvp_lun_sizes }}"
