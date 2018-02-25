@@ -306,7 +306,7 @@
       lineinfile:
         state: present
         path: "{{ item.path }}"
-        insertbefore: "{{ item.before }}
+        insertbefore: "{{ item.before }}"
         regexp: "{{ item.regex }}"
         line: "{{ item.line }}"
       register: apacheconf_result
