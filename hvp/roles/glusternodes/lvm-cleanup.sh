@@ -34,7 +34,7 @@ if [ -n "${root_vg}" ]; then
 		if [ "${vg_name}" = "${root_vg}" ]; then
 			continue
 		fi
-		for lv_name in $(lvs --noheading -o lv_name "${vg_name}"); do
+		for lv_name in $(lvs --noheadings -o lv_name "${vg_name}"); do
 			vol2rm_name[${j}]="${lv_name}"
 			vol2rm_vg[${j}]="${vg_name}"
 			vol2rm_mnt[${j}]=$(mount | sed -e 's%mapper/\([^-]*\)-%\1/%' | grep "^/dev/${vg_name}/${lv_name}[[:space:]]" | awk '{print $3}')
