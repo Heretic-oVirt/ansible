@@ -11,17 +11,19 @@
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: reconfigure default gateway
-      nmcli:
-        conn_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
-        gw4: "{{ hvp_gateway_ip }}"
-        type: ethernet
-        state: present
+#    - name: reconfigure default gateway
+#      # TODO: the following does not work because NetworkManager-glib is missing
+#      nmcli:
+#        conn_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
+#        gw4: "{{ hvp_gateway_ip }}"
+#        type: ethernet
+#        state: present
     - name: install YUM-related packages
       yum:
         name: "{{ item }}"
         state: latest
       with_items:
+        - yum-utils
         - yum-plugin-priorities
         - deltarpm
     - name: enable CentOS CR repo
@@ -74,6 +76,15 @@
         name: "{{ item }}"
         state: latest
       with_items:
+        - abrt
+        - abrt-addon-ccpp
+        - abrt-addon-kerneloops
+        - abrt-addon-pstoreoops
+        - abrt-addon-python
+        - abrt-addon-vmcore
+        - abrt-cli
+        - libreport-plugin-mailx
+        - bash-completion
         - ntpdate
         - mcstrans
         - stunnel
@@ -105,6 +116,7 @@
         - dstat
         - pdsh
         - pdsh-rcmd-ssh
+        - NetworkManager-glib
     - name: install Bareos-related packages
       yum:
         name: "{{ item }}"
@@ -193,7 +205,7 @@
         state: present
         path: /etc/ssh/sshd_config
         insertbefore: BOF
-        regexp: "{{ item.regex }}"
+        regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       register: sshdconf_result
       with_items:
@@ -268,7 +280,7 @@
         state: present
         path: "{{ item.path }}"
         insertbefore: "{{ item.before }}"
-        regexp: "{{ item.regex }}"
+        regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       register: apacheconf_result
       with_items:
@@ -290,9 +302,9 @@
         group: root
         mode: 0644
         backup: no
-        register: qemudev_result
-        when:
-          - ansible_virtualization_role == "guest"
+      register: qemudev_result
+      when:
+        - ansible_virtualization_role == "guest"
     - name: add virtual-guest-specific udev rules for VirtIO block devices
       copy:
         src: ../common/files/99-virtio-block.rules
@@ -301,9 +313,9 @@
         group: root
         mode: 0644
         backup: no
-        register: virtiodev_result
-        when:
-          - ansible_virtualization_role == "guest"
+      register: virtiodev_result
+      when:
+        - ansible_virtualization_role == "guest"
     - name: apply virtual-guest-specific udev rules for block devices
       command: udevadm trigger --attr-match=subsystem=block
       register: udevblocktrigger_result
@@ -324,7 +336,7 @@
         - { pname: 'vm.dirty_expire_centisecs', pvalue: '500', pfrag: '/etc/sysctl.d/virtualguest.conf' }
         - { pname: 'vm.dirty_writeback_centisecs', pvalue: '100', pfrag: '/etc/sysctl.d/virtualguest.conf' }
         - { pname: 'vm.swappiness', pvalue: '30', pfrag: '/etc/sysctl.d/virtualguest.conf' }
-        - { pname: 'kernel.sched_migration_cost', pvalue: '5000000', pfrag: '/etc/sysctl.d/virtualguest.conf' }
+        - { pname: 'kernel.sched_migration_cost_ns', pvalue: '5000000', pfrag: '/etc/sysctl.d/virtualguest.conf' }
       when:
         - ansible_virtualization_role == "guest"
     - name: configure logrotate
@@ -332,7 +344,7 @@
         state: present
         path: "{{ item.path }}"
         insertbefore: "{{ item.before }}"
-        regexp: "{{ item.regex }}"
+        regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       register: logrotateconf_result
       with_items:
