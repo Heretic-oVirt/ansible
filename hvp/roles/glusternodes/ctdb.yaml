@@ -8,10 +8,6 @@
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: gather suitable disks
-      hvp_free_disks: min_size_bytes=100000000000 accept_ssds=1
-    - name: gather suitable ssds
-      hvp_free_ssds: min_size_bytes=100000000000
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
