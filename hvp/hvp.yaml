@@ -7,7 +7,7 @@
 - include: roles/ovirtengine/ovirtnetworks.yaml
 - include: roles/glusternodes/ctdb.yaml
 - include: roles/ovirtengine/nfsdomains.yaml
-- include: roles/ovirtengine/ovirtvms.yaml
-- include: roles/glusternodes/adjoin.yaml
-- include: roles/glusternodes/backup.yaml
+#- include: roles/ovirtengine/ovirtvms.yaml
+#- include: roles/glusternodes/adjoin.yaml
+#- include: roles/glusternodes/backup.yaml
 ...
