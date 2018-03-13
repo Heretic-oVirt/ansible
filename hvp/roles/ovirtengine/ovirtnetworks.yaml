@@ -11,7 +11,7 @@
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: install the OVN-related packages
+    - name: install OVN-related packages
       yum:
         name: "{{ item }}"
         state: latest
@@ -21,7 +21,7 @@
         - openvswitch-ovn-central
         - python-openvswitch
         - ovirt-provider-ovn
-    - name: enable and start the OVN-related services
+    - name: enable and start OVN-related services
       systemd:
         name: "{{ item }}"
         enabled: True
