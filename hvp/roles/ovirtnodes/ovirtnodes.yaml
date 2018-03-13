@@ -66,6 +66,19 @@
         owner: root
         group: root
         mode: 0644
+    - name: configure DHCPd reservation for Engine vm
+      template:
+        src: templates/dhcpd-static-leases.j2
+        dest: /etc/dhcp/dhcpd-static-leases.conf
+        owner: root
+        group: root
+        mode: 0644
+      delegate_to: 127.0.0.1
+    - name: apply DHCPd reconfiguration
+      systemd:
+        name: dhcpd
+        state: restarted
+      delegate_to: 127.0.0.1
     - name: perform actual Hosted Engine setup
       vars:
         ansible_ssh_pipelining: no
