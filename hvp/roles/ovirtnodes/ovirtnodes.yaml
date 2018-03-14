@@ -73,12 +73,12 @@
         owner: root
         group: root
         mode: 0644
-      delegate_to: 127.0.0.1
+      delegate_to: localhost
     - name: apply DHCPd reconfiguration
       systemd:
         name: dhcpd
         state: restarted
-      delegate_to: 127.0.0.1
+      delegate_to: localhost
     - name: perform actual Hosted Engine setup
       vars:
         ansible_ssh_pipelining: no
