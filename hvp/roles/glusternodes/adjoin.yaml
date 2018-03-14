@@ -33,17 +33,16 @@
         responses:
           (?i)password: "{{ hvp_adjoin_password }}"
     - name: join AD domain
-      shell: net ads join -k osName="CentOS" osVer="7.4.1708"
+      command: net ads join -k osName="CentOS" osVer="7.4.1708"
       register: join_result
     - name: remove Kerberos ticket
-      shell: kdestroy
+      command: kdestroy
       register: kdestroy_result
 - name: restart Samba services
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: Restart CTDB to apply the configuration above
-      systemd:
-        name: ctdb
-        state: restarted
+    - name: Signal Samba services to apply the configuration above
+      command: smbcontrol all reload-config
+      register: smbcontrolreload_result
 ...
