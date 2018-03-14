@@ -11,6 +11,55 @@
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
+- name: Prepare Gluster-volume based share dirs for CIFS
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: mount the Gluster volume intended for CIFS sharing
+      command: "mount -t glusterfs localhost:/winshare /mnt"
+      register: winsharemount_result
+      warn: false
+    - name: create the toplevel folders intended for CIFS sharing
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      with_items:
+        - { path: '/mnt/homes', owner: 'root', group: 'root', mode: '0751' }
+        - { path: '/mnt/profiles', owner: 'root', group: 'root', mode: '1751' }
+        - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
+        - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
+      when: winsharemount_result.rc == 0
+    - name: unmount the Gluster volume intended for CIFS sharing
+      command: "umount -l /mnt"
+      register: winshareumount_result
+      warn: false
+- name: Prepare Gluster-volume based share dirs for NFS
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: mount the Gluster volume intended for NFS sharing
+      command: "mount -t glusterfs localhost:/unixshare /mnt"
+      register: unixsharemount_result
+      warn: false
+    - name: create the toplevel folders intended for NFS sharing
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      with_items:
+        - { path: '/mnt/homes', owner: 'root', group: 'root', mode: '0751' }
+        - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
+        - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
+      when: unixsharemount_result.rc == 0
+    - name: unmount the Gluster volume intended for NFS sharing
+      command: "umount -l /mnt"
+      register: unixshareumount_result
+      warn: false
 - name: Configure and start Gluster-block
   hosts: glusternodes
   remote_user: root
@@ -28,20 +77,17 @@
     - name: create iSCSI LUNs
       command: "gluster-block create blockshare/block{{ item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ item.1 }}"
       register: createblock_result
-      with_indexed_items:
-        - "{{ hvp_lun_sizes }}"
+      with_indexed_items: "{{ hvp_lun_sizes }}"
     - name: extract iSCSI LUN usernames
       set_fact: lun_usernames="{{ lun_usernames }} + [{{ createblock_result.results[item.0].stdout | regex_search(username_regexp,'\\1') }}]"
       vars:
         username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
-      with_indexed_items:
-        - "{{ createblock_result.results }}"
+      with_indexed_items: "{{ createblock_result.results }}"
     - name: extract iSCSI LUN passwords
       set_fact: lun_passwords="{{ lun_passwords }} + [{{ createblock_result.results[item.0].stdout | regex_search(password_regexp,'\\1') }}]"
       vars:
         password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
-      with_indexed_items:
-        - "{{ createblock_result.results }}"
+      with_indexed_items: "{{ createblock_result.results }}"
     - name: save iSCSI LUN usernames/passwords
       copy:
         content: |
