@@ -100,5 +100,9 @@ engine_sd_mountopts: "{{ glusterfs_mountopts }}"
 
 ## Networking
 got_gluster_network: true
+gluster_network: 172.20.11.0/24
+
 got_lan_network: false
+
 got_internal_network: false
+
