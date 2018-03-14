@@ -71,6 +71,7 @@
         state: stopped
         no_block: no
     - name: copy LVM cleanup helper script
+      # TODO: remove when properly implemented by means of gDeploy
       copy:
         src: lvm-cleanup.sh
         dest: /usr/local/sbin/lvm-cleanup.sh
@@ -91,4 +92,14 @@
     - name: perform actual gdeploy-based Gluster unconfiguration
       command: gdeploy -k -vv -c "{{ playbook_dir }}/gdeploy-cleanup.conf"
       register: gdeploy_cleanup_result
+- name: perform LVM cleanup on nodes
+  # TODO: remove when properly implemented by means of gDeploy
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: execute LVM cleanup helper script
+      vars:
+        ansible_ssh_pipelining: no
+      command: /usr/local/sbin/lvm-cleanup.sh
+      register: lvmcleanup_result
 ...
