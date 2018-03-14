@@ -4,7 +4,7 @@
 - include: roles/ovirtnodes/ovirtnodes.yaml
 - include: roles/ovirtengine/ovirtengine.yaml
 - include: roles/ovirtengine/enginevmreconf.yaml
-- include: roles/ovirtengine/ovirtnetworks.yaml
+#- include: roles/ovirtengine/ovirtnetworks.yaml
 - include: roles/glusternodes/ctdb.yaml
 - include: roles/ovirtengine/nfsdomains.yaml
 #- include: roles/ovirtengine/ovirtvms.yaml
