@@ -1,4 +1,4 @@
-# Jinja2 template for AD-joined Samba configuration
+# AD-joined Samba configuration
 [global]
    server string = Enterprise File Server
    netbios name = {{ hvp_netbios_storagename }}
@@ -31,7 +31,7 @@
 
    log file = /var/log/samba/log.%m
    log level = 2
-   max log size = 50
+   max log size = 5000
    syslog = 1
    syslog only = No
 
@@ -69,16 +69,70 @@
 
 #====================== Local Share Definitions ==============================
 
-[Shares]
-   comment = Network shares
-   path = /
-   browseable = yes
+[Homes]
+   comment = User personal folder
+   path = /homes
+   browseable = no
    writable = yes
    available = yes
-   guest ok = yes
+   guest ok = no
+   valid users = %S
+   create mask = 0600
+   directory mask = 0700
+   force create mode = 00
+   force directory mode = 00
    vfs objects = glusterfs recycle
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
-   glusterfs:logfile = /var/log/samba/glusterfs-shares.log
+   glusterfs:logfile = /var/log/samba/glusterfs-homes.log
+   glusterfs:volume = winshare
+
+[Profiles]
+   comment = Default share
+   path = /profiles
+   browseable = no
+   writable = yes
+   available = yes
+   guest ok = no
+   profile acls = yes
+   csc policy = disable
+   create mask = 0600
+   directory mask = 0700
+   force create mode = 00
+   force directory mode = 00
+   hide files = /desktop.ini/outlook*.lnk/*Briefcase*/$RECYCLE.BIN/
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-profiles.log
+   glusterfs:volume = winshare
+
+[Groups]
+   comment = Group folders
+   path = /groups
+   browseable = yes
+   writable = yes
+   available = yes
+   guest ok = no
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-groups.log
+   glusterfs:volume = winshare
+
+[Software]
+   comment = Software repository
+   path = /software
+   browseable = yes
+   writable = yes
+   available = yes
+   guest ok = no
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-software.log
    glusterfs:volume = winshare
