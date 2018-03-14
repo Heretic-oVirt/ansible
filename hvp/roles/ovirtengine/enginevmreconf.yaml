@@ -11,13 +11,6 @@
     - name: get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-#    - name: reconfigure default gateway
-#      # TODO: the following does not work because NetworkManager-glib is missing
-#      nmcli:
-#        conn_name: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
-#        gw4: "{{ hvp_gateway_ip }}"
-#        type: ethernet
-#        state: present
     - name: install YUM-related packages
       yum:
         name: "{{ item }}"
@@ -117,6 +110,7 @@
         - pdsh
         - pdsh-rcmd-ssh
         - NetworkManager-glib
+        - nm-connection-editor
     - name: install Bareos-related packages
       yum:
         name: "{{ item }}"
@@ -462,4 +456,14 @@
         group: root
         mode: 0644
         backup: no
+    - name: reconfigure default gateway
+      # TODO: the following should be performed under global maintenance
+      nmcli:
+        ifname: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
+        conn_name: "System {{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
+        ip4: "{{ hvp_engine_ip }}/{{ hvp_engine_netprefix }}"
+        gw4: "{{ hvp_gateway_ip }}"
+        autoconnect: yes
+        type: ethernet
+        state: present
 ...
