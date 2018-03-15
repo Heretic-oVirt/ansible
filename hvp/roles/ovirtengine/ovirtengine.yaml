@@ -37,6 +37,7 @@
           mount_options: "{{ vmstore_sd_mountopts }}"
         wait: true
     - name: Wait to allow time for the HostedEngine vm to be registered and up
+      # TODO: replace with a proper wait for Engine vm appearance (create custom module)
       wait_for:
         timeout: 300
     - name: Add further Hosts
