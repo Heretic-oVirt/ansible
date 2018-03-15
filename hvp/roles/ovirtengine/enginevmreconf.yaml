@@ -3,6 +3,15 @@
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
+- name: put oVirt Hosted Engine in maintenance
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - name: activate global maintenance
+      vars:
+        ansible_ssh_pipelining: no
+      command: hosted-engine --set-maintenance --mode=global
+      register: enterglobalmaintenance_result
 - name: perform oVirt configuration
   hosts: ovirtengine
   remote_user: root
@@ -466,4 +475,14 @@
         autoconnect: yes
         type: ethernet
         state: present
+- name: remove oVirt Hosted Engine from maintenance
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - name: deactivate global maintenance
+      vars:
+        ansible_ssh_pipelining: no
+      command: hosted-engine --set-maintenance --mode=none
+      register: exitglobalmaintenance_result
+
 ...
