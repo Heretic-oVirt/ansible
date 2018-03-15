@@ -81,15 +81,15 @@
   tasks:
     - name: define Gluster network interface
       set_fact:
-        gluster_eth: {% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(gluster_network) %}{{ eth }}{% endif %}{% endif %}{% endfor %}
+        gluster_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(gluster_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_gluster_network
     - name: define LAN network interface
       set_fact:
-        lan_eth: {% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(lan_network) %}{{ eth }}{% endif %}{% endif %}{% endfor %}
+        lan_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(lan_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_lan_network
     - name: define Internal network interface
       set_fact:
-        internal_eth: {% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(internal_network) %}{{ eth }}{% endif %}{% endif %}{% endfor %}
+        internal_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(internal_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_internal_network
 - name: Perform global oVirt networks configuration through the Engine
   hosts: ovirtengine
@@ -118,13 +118,13 @@
         read_only: false
         url: "http://{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}:9696"
         wait: true
-    - name: modify Management network
+    - name: qualify Management network when it is the only one
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
         name: ovirtmgmt
         data_center: "{{ dc_name }}"
         clusters:
-          - { name: "{{ cluster_name }}", required: true, gluster: true, migration: true, display: true }
+          - { name: "{{ cluster_name }}", required: true, gluster: true, migration: true }
         state: present
         vm_network: true
         wait: true
@@ -153,6 +153,17 @@
         wait: true
       when: got_gluster_network
       with_items: groups['ovirtnodes']
+    - name: qualify Management network when LAN network is absent
+      ovirt_networks:
+        auth: "{{ ovirt_auth }}"
+        name: ovirtmgmt
+        data_center: "{{ dc_name }}"
+        clusters:
+          - { name: "{{ cluster_name }}", required: true, display: true }
+        state: present
+        vm_network: true
+        wait: true
+      when: not got_lan_network
     - name: add LAN network
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
