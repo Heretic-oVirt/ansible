@@ -25,12 +25,6 @@ Please note that further (specific) TODO lines still exist inside single YAML/Ji
 
 * add support for BMC options in roles/ovirtengine/ovirtengine.yaml
 
-* in roles/ovirtengine/enginevmreconf.yaml: add Bareos configuration both on engine and on nodes - maybe separate into independent backup.yaml playbook
-
-* in roles/ovirtengine/ovirtnetworks.yaml: create a couple of OVN logical networks
-
-* in roles/ovirtengine/ovirtnetworks.yaml: add oVirt networks for gluster (to marked as Gluster network), lan (needed for CTDB) and internal zones if present
-
 * in roles/glusternodes/templates/smb.j2: lower log level to 0 general and vfs-glusterfs too
 
 * in roles/glusternodes/adjoin.yaml: add nfs principal and extract/propagate keytab for kerberized NFSv4 Ganesha operations when ready
