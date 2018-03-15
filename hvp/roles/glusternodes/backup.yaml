@@ -29,4 +29,5 @@
       with_items:
         - bareos-fd
         - bareos-sd
+# TODO: configure and enable/start Bareos on vms
 ...
