@@ -3,7 +3,7 @@
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: perform oVirt configuration
+- name: perform OVN configuration on oVirt Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
@@ -48,10 +48,10 @@
         immediate: True
         state: enabled
     - name: configure OVN central to listen on ports - 1
-      command: ovn-nbctl set-connection ptcp:6641
+      command: ovn-sbctl set-connection ptcp:6642
       register: centralconf1_result
     - name: configure OVN central to listen on ports - 2
-      command: ovn-nbctl set-connection ptcp:6642
+      command: ovn-nbctl set-connection ptcp:6641
       register: centralconf2_result
 - name: perform OVN configuration on hosts
   hosts: ovirtnodes
@@ -65,4 +65,134 @@
     - name: configure OVN VIF driver
       command: vdsm-tool ovn-config "{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}" "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       register: vifconf_result
+- name: perform OVN networks creation on oVirt Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - name: create OVN networks
+      command: "ovn-nbctl ls-add {{ item }}"
+      register: createovnnetwork_result
+      with_items:
+        - dmz0
+        - dmz1
+- name: perform network discovery on hosts
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - name: define Gluster network interface
+      set_fact:
+        gluster_eth: {% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(gluster_network) %}{{ eth }}{% endif %}{% endif %}{% endfor %}
+      when: got_gluster_network
+    - name: define LAN network interface
+      set_fact:
+        lan_eth: {% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(lan_network) %}{{ eth }}{% endif %}{% endif %}{% endfor %}
+      when: got_lan_network
+    - name: define Internal network interface
+      set_fact:
+        internal_eth: {% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(internal_network) %}{{ eth }}{% endif %}{% endif %}{% endfor %}
+      when: got_internal_network
+- name: Perform global oVirt networks configuration through the Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include: ../common/tasks/setupkeys.yaml
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: Obtain oVirt Engine SSO token
+      no_log: true
+      ovirt_auth:
+        url: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_file: "{{ ca_file }}"
+    - name: add external network provider for OVN
+      # TODO: properly setup certificates for OVN communications and switch to HTTPS
+      ovirt_external_provider:
+        auth: "{{ ovirt_auth }}"
+        name: ovn_provider
+        description: OVN external network provider
+        type: network
+        network_type: external
+        state: present
+        read_only: false
+        url: "http://{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}:9696"
+        wait: true
+    - name: add Gluster network
+      ovirt_networks:
+        auth: "{{ ovirt_auth }}"
+        name: gluster
+        description: Gluster network
+        data_center: "{{ dc_name }}"
+        clusters:
+          - { name: "{{ cluster_name }}", required: true, gluster: true, migration: true }
+        state: present
+        vm_network: false
+        wait: true
+      when: got_gluster_network
+    - name: add node interfaces to Gluster network
+      ovirt_host_networks:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item }}"
+        interface: "{{ hostvars[item]['gluster_eth'] }}"
+        state: present
+        networks:
+          - { name: gluster }
+        check: true
+        wait: true
+      when: got_gluster_network
+      with_items: groups['ovirtnodes']
+    - name: add LAN network
+      ovirt_networks:
+        auth: "{{ ovirt_auth }}"
+        name: lan
+        description: LAN network
+        data_center: "{{ dc_name }}"
+        clusters:
+          - { name: "{{ cluster_name }}", required: true }
+        state: present
+        vm_network: true
+        wait: true
+      when: got_lan_network
+    - name: add node interfaces to LAN network
+      ovirt_host_networks:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item }}"
+        interface: "{{ hostvars[item]['lan_eth'] }}"
+        state: present
+        networks:
+          - { name: lan }
+        check: true
+        wait: true
+      when: got_lan_network
+      with_items: groups['ovirtnodes']
+    - name: add Internal network
+      ovirt_networks:
+        auth: "{{ ovirt_auth }}"
+        name: internal
+        description: Internal network
+        data_center: "{{ dc_name }}"
+        clusters:
+          - { name: "{{ cluster_name }}", required: true }
+        state: present
+        vm_network: true
+        wait: true
+      when: got_internal_network
+    - name: add node interfaces to Internal network
+      ovirt_host_networks:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item }}"
+        interface: "{{ hostvars[item]['internal_eth'] }}"
+        state: present
+        networks:
+          - { name: internal }
+        check: true
+        wait: true
+      when: got_internal_network
+      with_items: groups['ovirtnodes']
+    - name: Revoke the SSO token
+      no_log: true
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"
 ...
