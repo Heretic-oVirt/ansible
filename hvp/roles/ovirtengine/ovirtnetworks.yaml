@@ -118,6 +118,17 @@
         read_only: false
         url: "http://{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}:9696"
         wait: true
+    - name: modify Management network
+      ovirt_networks:
+        auth: "{{ ovirt_auth }}"
+        name: ovirtmgmt
+        data_center: "{{ dc_name }}"
+        clusters:
+          - { name: "{{ cluster_name }}", required: true, gluster: true, migration: true, display: true }
+        state: present
+        vm_network: true
+        wait: true
+      when: not got_gluster_network
     - name: add Gluster network
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
@@ -149,7 +160,7 @@
         description: LAN network
         data_center: "{{ dc_name }}"
         clusters:
-          - { name: "{{ cluster_name }}", required: true }
+          - { name: "{{ cluster_name }}", required: true, display: true }
         state: present
         vm_network: true
         wait: true
