@@ -12,6 +12,7 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: install OVN-related packages
+      # TODO: lower log level in /etc/ovirt-provider-ovn/logger.conf
       yum:
         name: "{{ item }}"
         state: latest
@@ -29,6 +30,11 @@
         no_block: no
       with_items:
         - ovirt-provider-ovn
+    - name: reload firewalld to detect OVN-provider service
+      systemd:
+        name: firewalld
+        state: reloaded
+        no_block: no
     - name: allow OVN-provider communications
       firewalld:
         service: ovirt-provider-ovn
