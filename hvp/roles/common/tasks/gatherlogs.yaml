@@ -1,0 +1,15 @@
+---
+- name: generate diagnostic archives
+  command: "{{ item }}"
+  register: command_result
+  with_items:
+   - "/root/bin/backup-conf"
+   - "/root/bin/backup-log"
+- name: copy diagnostic archives
+  synchronize:
+    mode: pull
+    recursive: yes
+    partial: yes
+    src: /root/backup
+    dest: "/root/backup/{{ inventory_host }}"
+...
