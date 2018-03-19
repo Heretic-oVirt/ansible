@@ -3,7 +3,8 @@
   hosts: glusternodes
   tasks:
     - name: generate diagnostic archives
-      command: "{{ item }}"
+      shell: "{{ item }} > /dev/null 2>&1"
+      ignore_errors: yes
       register: command_result
       with_items:
         - "/root/bin/backup-conf"
