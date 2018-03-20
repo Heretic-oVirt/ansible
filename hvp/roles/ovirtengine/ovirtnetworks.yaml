@@ -76,7 +76,7 @@
   remote_user: root
   tasks:
     - name: create OVN networks
-      command: "ovn-nbctl ls-add {{ item }}"
+      command: "ovn-nbctl --may-exist ls-add {{ item }}"
       register: createovnnetwork_result
       with_items:
         - dmz0
