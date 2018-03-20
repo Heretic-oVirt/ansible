@@ -154,11 +154,11 @@
         interface: "{{ hostvars[item]['gluster_eth'] }}"
         state: present
         networks:
-          - { name: gluster }
+          - "{ name: 'gluster', boot_protocol: 'static', address: {{ hostvars[inventory_hostname]['ansible_' + gluster_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[inventory_hostname]['ansible_' + gluster_eth]['ipv4'] | ipaddr('prefix') }} }"
         check: true
         wait: true
       when: got_gluster_network
-      with_items: groups['ovirtnodes']
+      with_items: "{{ groups['ovirtnodes'] }}"
     - name: qualify Management network when LAN network is absent
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
@@ -189,11 +189,11 @@
         interface: "{{ hostvars[item]['lan_eth'] }}"
         state: present
         networks:
-          - { name: lan }
+          - "{ name: 'lan', boot_protocol: 'static', address: {{ hostvars[inventory_hostname]['ansible_' + lan_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[inventory_hostname]['ansible_' + lan_eth]['ipv4'] | ipaddr('prefix') }} }"
         check: true
         wait: true
       when: got_lan_network
-      with_items: groups['ovirtnodes']
+      with_items: "{{ groups['ovirtnodes'] }}"
     - name: add Internal network
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
@@ -213,11 +213,11 @@
         interface: "{{ hostvars[item]['internal_eth'] }}"
         state: present
         networks:
-          - { name: internal }
+          - "{ name: 'internal', boot_protocol: 'static', address: {{ hostvars[inventory_hostname]['ansible_' + internal_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[inventory_hostname]['ansible_' + internal_eth]['ipv4'] | ipaddr('prefix') }} }"
         check: true
         wait: true
       when: got_internal_network
-      with_items: groups['ovirtnodes']
+      with_items: "{{ groups['ovirtnodes'] }}"
     - name: Revoke the SSO token
       no_log: true
       ovirt_auth:
