@@ -87,6 +87,7 @@
         - abrt-cli
         - libreport-plugin-mailx
         - bash-completion
+        - rsync
         - ntpdate
         - mcstrans
         - stunnel
@@ -128,6 +129,8 @@
         - bareos-tools
         - bareos-client
         - bareos-director
+        - bareos-database-postgresql
+        - bareos-databse-tools
         - bareos-webui
     - name: configure YUM-cron
       shell: "sed -i -e 's/^update_messages\\s.*$/update_messages = no/' -e 's/^download_updates\\s.*$/download_updates = no/' -e 's/^apply_updates\\s.*$/apply_updates = no/' -e 's/^emit_via\\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
