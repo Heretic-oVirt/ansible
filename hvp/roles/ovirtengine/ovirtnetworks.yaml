@@ -100,6 +100,13 @@
 - name: Perform global oVirt networks configuration through the Engine
   hosts: ovirtengine
   remote_user: root
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      when: (got_gluster_network and hostvars[item]['gluster_eth'] is not defined) or (got_lan_network and hostvars[item]['lan_eth'] is not defined) or (got_internal_network and hostvars[item]['internal_eth'] is not defined)
+      with_items: "{{ groups['ovirtnodes'] }}"
   tasks:
     - include: ../common/tasks/setupkeys.yaml
     - name: get common vars
