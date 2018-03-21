@@ -135,6 +135,6 @@
     - name: wait for Samba to become ready on the host
       wait_for: port=445 timeout=300
     - name: configure local root user
-      shell: "echo -e '\n{{ ansible_ssh_pass }}\n{{ ansible_ssh_pass }}\n' | smbpasswd -s -a root"
+      shell: "echo -e '{{ ansible_ssh_pass }}\n{{ ansible_ssh_pass }}\n' | smbpasswd -s -a root"
       register: smbpasswd_result
 ...
