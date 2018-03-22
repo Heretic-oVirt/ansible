@@ -73,6 +73,12 @@
     - name: enable use of deltarpm
       command: yum-config-manager --save --setopt='deltarpm=1'
       register: enabledeltarpm_result
+    - name: upgrade all OS packages
+      yum:
+        name: '*'
+        state: latest
+        update_cache: yes
+        disablerepo: "ovirt-{{ compatibility_version }}"
     - name: install HVP-recommended packages
       yum:
         name: "{{ item }}"
@@ -132,6 +138,12 @@
         - bareos-database-postgresql
         - bareos-databse-tools
         - bareos-webui
+    - name: cleanup rpm leftovers
+      command: "{{ item }}"
+      register: cleanupleftovers_result
+      with_items:
+        - "find /etc -type f -name '*.rpmnew' -exec rename .rpmnew '' '{}' ';'"
+        - "find /etc -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
     - name: configure YUM-cron
       shell: "sed -i -e 's/^update_messages\\s.*$/update_messages = no/' -e 's/^download_updates\\s.*$/download_updates = no/' -e 's/^apply_updates\\s.*$/apply_updates = no/' -e 's/^emit_via\\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
       register: confyumcron_result
@@ -469,7 +481,6 @@
         mode: 0644
         backup: no
     - name: reconfigure default gateway
-      # TODO: the following should be performed under global maintenance
       nmcli:
         ifname: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
         conn_name: "System {{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
@@ -478,6 +489,18 @@
         autoconnect: yes
         type: ethernet
         state: present
+    - name: reboot engine to apply all updates above
+      shell: nohup bash -c "sleep 20 && systemctl reboot" &
+      async: 1
+      poll: 0
+      register: reboot_result
+    - name: wait for engine to come back
+      wait_for_connection:
+        delay: 50
+        sleep: 5
+        timeout: 300
+        # Note: sometimes it seems that reboot results in poweroff instead - exiting out of maintenance below will solve it anyway
+        ignore_errors: true
 - name: remove oVirt Hosted Engine from maintenance
   hosts: ovirt_master
   remote_user: root
