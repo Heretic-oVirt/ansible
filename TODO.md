@@ -11,7 +11,7 @@ Please note that further (specific) TODO lines still exist inside single YAML/Ji
 
 * add NFS-Ganesha to roles/glusternodes/glustercleanup.yaml when ready
 
-* add NFS-Ganesha to roles/glusternodes/ctdb.yaml when ready
+* add NFS-Ganesha to roles/glusternodes/storageservices.yaml when ready
 
 * add support for VLAN eth (not only plain and bond) to roles/ovirtnodes/ovirtnodes.yaml
 
