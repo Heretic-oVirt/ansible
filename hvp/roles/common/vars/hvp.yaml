@@ -2,6 +2,8 @@
 # Note: this file will be overridden by install-time autodetection logic
 
 # HVP local conventions
+hvp_management_domainname: mgmt.private
+hvp_gluster_domainname: gluster.private
 hvp_orthodox_mode: False
 hvp_master_node: "{{ groups['ovirtnodes'][0] }}"
 # TODO: dynamically determine proper values for Engine RAM/CPUs/imgsize
@@ -10,7 +12,7 @@ hvp_engine_cpus: 2
 hvp_engine_imgsize: 80
 hvp_engine_setup_timeout: 3600
 hvp_engine_name: celestia
-hvp_engine_domainname: mgmt.private
+hvp_engine_domainname: "{{ hvp_management_domainname }}"
 hvp_engine_ip: 172.20.10.5
 hvp_engine_netprefix: 24
 hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
@@ -27,19 +29,27 @@ hvp_admin_username: hvpadmin
 # HVP Gluster settings
 # TODO: derive proper values for Gluster volume sizes from user settings
 # TODO: dynamically determine arbiter sizes for each Gluster volume
+hvp_enginedomain_volume_name: enginedomain
 hvp_enginedomain_size: "100GB"
 hvp_enginedomain_arbitersize: "1GB"
+hvp_vmstoredomain_volume_name: vmstoredomain
 hvp_vmstoredomain_size: "500GB"
 hvp_vmstoredomain_arbitersize: "1GB"
+hvp_isodomain_volume_name: isodomain
 hvp_isodomain_size: "30GB"
 hvp_isodomain_arbitersize: "1GB"
+hvp_ctdb_volume_name: ctdb
 hvp_ctdb_size: "1GB"
+hvp_winshare_volume_name: winshare
 hvp_winshare_size: "1024GB"
 hvp_winshare_arbitersize: "10GB"
+hvp_unixshare_volume_name: unixshare
 hvp_unixshare_size: "1024GB"
 hvp_unixshare_arbitersize: "10GB"
+hvp_blockshare_volume_name: blockshare
 hvp_blockshare_size: "1024GB"
 hvp_blockshare_arbitersize: "10GB"
+hvp_backup_volume_name: backup
 hvp_backup_size: "1024GB"
 hvp_backup_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1536k"
@@ -51,7 +61,7 @@ hvp_lun_sizes:
   - 450GiB
 
 # Engine credentials:
-url: https://celestia.mgmt.private/ovirt-engine/api
+url: "https://{{ hvp_engine_name }}.{{ hvp_engine_domainname }}/ovirt-engine/api"
 username: admin@internal
 password: HVP_dem0
 ca_file: /etc/pki/ovirt-engine/ca.pem
@@ -79,23 +89,22 @@ cluster_name: "Default"
 ## Storage
 # Note: ISO domain will be of type NFS while all others will be of type GlusterFS
 # Note: Engine vm has no access to Gluster network, so we must resort to NFS for ISO (Engine must access it for image upload)
-# TODO: use NFS-Ganesha as soon as a proper CTDB-based configuration has been devised - using internal Gluster-NFS meanwhile
 glusterfs_addr: "{{ groups['gluster_master'] | first }}"
 glusterfs_mountopts: "backup-volfile-servers={{ groups['gluster_nonmaster_nodes'] | join(':') }},fetch-attempts=2,log-level=WARNING"
 iso_sd_type: nfs
 iso_sd_addr: discord.mgmt.private
 iso_sd_name: iso_domain
-iso_sd_path: /isodomain
+iso_sd_path: "/{{ hvp_isodomain_volume_name }}"
 iso_sd_mountopts: 
 vmstore_sd_type: glusterfs
 vmstore_sd_addr: "{{ glusterfs_addr }}"
 vmstore_sd_name: vmstore_domain
-vmstore_sd_path: /vmstoredomain
+vmstore_sd_path: "/{{ hvp_vmstoredomain_volume_name }}"
 vmstore_sd_mountopts: "{{ glusterfs_mountopts }}"
 engine_sd_type: glusterfs
 engine_sd_addr: "{{ glusterfs_addr }}"
 engine_sd_name: engine_domain
-engine_sd_path: /enginedomain
+engine_sd_path: "/{{ hvp_enginedomain_volume_name }}"
 engine_sd_mountopts: "{{ glusterfs_mountopts }}"
 
 ## Networking
