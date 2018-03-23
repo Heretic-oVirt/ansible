@@ -9,5 +9,5 @@
 - include: roles/ovirtengine/nfsdomains.yaml
 #- include: roles/ovirtengine/ovirtvms.yaml
 #- include: roles/glusternodes/adjoin.yaml
-#- include: roles/glusternodes/backup.yaml
+- include: roles/ovirtnodes/backup.yaml
 ...
