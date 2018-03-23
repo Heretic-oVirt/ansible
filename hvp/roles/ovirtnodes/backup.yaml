@@ -1,0 +1,103 @@
+---
+- name: install and configure Bareos on nodes
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - name: install Bareos-related packages on nodes
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - bareos-tools
+        - bareos-client
+        - bareos-filedaemon-glusterfs-plugin
+        - bareos-storage
+        - bareos-storage-glusterfs
+    - name: cleanup Bareos rpm leftovers on nodes
+      command: "{{ item }}"
+      register: cleanupnodesbareosleftovers_result
+      with_items:
+        - "find /etc/bareos -type f -name '*.rpmnew' -exec rename .rpmnew '' '{}' ';'"
+        - "find /etc/bareos -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
+    - name: create random passwords for file and storage daemons on nodes
+      set_fact:
+        bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
+        bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
+        bareos_sd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
+        bareos_sd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
+    - name: copy template files on nodes
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: yes
+      with_items:
+        - { src: "/etc/bareos/bareos-dir.d/storage/Gluster.conf.example", dest: "/etc/bareos/bareos-dir.d/storage/Gluster.conf" }
+        - { src: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf.example", dest: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf" }
+    - name: set parameters in configuration files on nodes
+      lineninfile:
+        state: present
+        path: "{{ item.path }}"
+        backrefs: yes
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      register: setnodesbareosparameters_result
+      with_items:
+        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Address", line: "\1Address = \"{{ inventory_hostname }}\"" }
+        - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: "\1Device Options = \"uri=gluster://{{ ansible_hostname }}.{{ hvp_gluster_domainname }}/{{ hvp_backup_volume_name }}/bareos\"" }
+        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: "\Name = {{ ansible_hostname }}-fd" }
+        - { path: "/etc/bareos/bareos-fd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_dir_password'] }}\"" }
+        - { path: "/etc/bareos/bareos-fd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
+        - { path: "/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
+        - { path: "/etc/bareos/bareos-sd.d/storage/bareos-sd.conf", regexp: "^([[:space:]]*)Name", line: "\Name = {{ ansible_hostname }}-sd" }
+        - { path: "/etc/bareos/bareos-sd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_dir_password'] }}\"" }
+        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_dir_password'] }}\"" }
+        - { path: "/etc/bareos/bareos-sd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_mon_password'] }}\"" }
+        - { path: "/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_mon_password'] }}\"" }
+- name: install, configure and start Bareos on Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+  # TODO: configure Bareos on Engine
+  # TODO: prepare Bareos DB on Engine (use embedded PostgreSQL)
+  # TODO: configure bareos-webui on Engine (use embedded Apache)
+    - name: install Bareos-related packages on Engine
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - bareos-tools
+        - bareos-client
+        - bareos-director
+        - bareos-database-postgresql
+        - bareos-database-tools
+        - bareos-webui
+    - name: cleanup Bareos rpm leftovers on Engine
+      command: "{{ item }}"
+      register: cleanupenginebareosleftovers_result
+      with_items:
+        - "find /etc/bareos -type f -name '*.rpmnew' -exec rename .rpmnew '' '{}' ';'"
+        - "find /etc/bareos -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
+    - name: enable and start Bareos-related services
+      systemd:
+        name: "{{ item }}"
+        enabled: True
+        state: started
+        no_block: no
+      with_items:
+        - bareos-fd
+        - bareos-dir
+- name: start Bareos on nodes
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: enable and start Bareos-related services
+      systemd:
+        name: "{{ item }}"
+        enabled: True
+        state: started
+        no_block: no
+      with_items:
+        - bareos-fd
+        - bareos-sd
+# TODO: install, configure and enable/start Bareos file daemons on vms
+...
