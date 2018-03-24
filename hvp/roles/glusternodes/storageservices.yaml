@@ -10,7 +10,10 @@
     - include: ../common/tasks/setupkeys.yaml
     - name: get common vars
       include_vars:
-        file: ../common/vars/hvp.yaml
+        file: "{{ item }}"
+      with_items:
+        - "../common/vars/hvp.yaml"
+        - "../common/vars/ad.yaml"
 - name: Prepare Gluster-volume based share dirs for CIFS
   hosts: gluster_master
   remote_user: root
@@ -100,7 +103,7 @@
         dest: /root/etc/lun_credentials
         backup: yes
       delegate_to: localhost
-- name: Configure and start CTDB
+- name: Configure and start CTDB/Samba
   hosts: glusternodes
   remote_user: root
   tasks:
@@ -122,6 +125,13 @@
         enabled: True
         state: started
         no_block: no
+    - name: prepare Samba Workgroup configuration file
+      template:
+        src: templates/smb-workgroup.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: 0644
     - name: enable and start the CTDB service
       systemd:
         name: ctdb
