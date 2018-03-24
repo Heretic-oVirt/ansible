@@ -5,7 +5,7 @@
 hvp_management_domainname: mgmt.private
 hvp_gluster_domainname: gluster.private
 hvp_orthodox_mode: False
-hvp_master_node: "{{ groups['ovirtnodes'][0] }}"
+hvp_master_node: "{{ groups['ovirt_master'][0] }}"
 # TODO: dynamically determine proper values for Engine RAM/CPUs/imgsize
 hvp_engine_ram: 4096
 hvp_engine_cpus: 2
@@ -13,8 +13,10 @@ hvp_engine_imgsize: 80
 hvp_engine_setup_timeout: 3600
 hvp_engine_name: celestia
 hvp_engine_domainname: "{{ hvp_management_domainname }}"
+# TODO: derive the following by Ansible lookup on name
 hvp_engine_ip: 172.20.10.5
 hvp_engine_netprefix: 24
+# TODO: derive the following by Ansible lookup on names
 hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
 hvp_switch_ip: 172.20.10.200
 hvp_gateway_ip: 172.20.10.1
