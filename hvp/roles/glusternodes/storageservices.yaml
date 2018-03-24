@@ -16,7 +16,7 @@
   remote_user: root
   tasks:
     - name: mount the Gluster volume intended for CIFS sharing
-      command: "mount -t glusterfs localhost:/winshare /mnt"
+      command: "mount -t glusterfs localhost:/{{ hvp_winshare_volume_name }} /mnt"
       register: winsharemount_result
       warn: false
     - name: create the toplevel folders intended for CIFS sharing
@@ -41,7 +41,7 @@
   remote_user: root
   tasks:
     - name: mount the Gluster volume intended for NFS sharing
-      command: "mount -t glusterfs localhost:/unixshare /mnt"
+      command: "mount -t glusterfs localhost:/{{ hvp_unixshare_volume_name }} /mnt"
       register: unixsharemount_result
       warn: false
     - name: create the toplevel folders intended for NFS sharing
@@ -75,7 +75,7 @@
   remote_user: root
   tasks:
     - name: create iSCSI LUNs
-      command: "gluster-block create blockshare/block{{ item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ item.1 }}"
+      command: "gluster-block create {{ hvp_blockshare_volume_name }}/block{{ item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ item.1 }}"
       register: createblock_result
       with_indexed_items: "{{ hvp_lun_sizes }}"
     - name: extract iSCSI LUN usernames
