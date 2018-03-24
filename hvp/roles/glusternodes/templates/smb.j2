@@ -86,10 +86,10 @@
    recycle:versions = yes
    #glusterfs:loglevel = 7
    glusterfs:logfile = /var/log/samba/glusterfs-homes.log
-   glusterfs:volume = winshare
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
 
 [Profiles]
-   comment = Default share
+   comment = User profile folder
    path = /profiles
    browseable = no
    writable = yes
@@ -107,7 +107,7 @@
    recycle:versions = yes
    #glusterfs:loglevel = 7
    glusterfs:logfile = /var/log/samba/glusterfs-profiles.log
-   glusterfs:volume = winshare
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
 
 [Groups]
    comment = Group folders
@@ -121,7 +121,7 @@
    recycle:versions = yes
    #glusterfs:loglevel = 7
    glusterfs:logfile = /var/log/samba/glusterfs-groups.log
-   glusterfs:volume = winshare
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
 
 [Software]
    comment = Software repository
@@ -135,4 +135,4 @@
    recycle:versions = yes
    #glusterfs:loglevel = 7
    glusterfs:logfile = /var/log/samba/glusterfs-software.log
-   glusterfs:volume = winshare
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
