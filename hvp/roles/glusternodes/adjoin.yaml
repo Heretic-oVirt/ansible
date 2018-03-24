@@ -6,13 +6,13 @@
   tasks:
     - name: get common vars
       include_vars:
-        file: ../common/vars/hvp.yaml
-    - name: get common AD vars
-      include_vars:
-        file: ../common/vars/ad.yaml
-    - name: prepare Samba configuration file
+        file: "{{ item }}"
+      with_items:
+        - "../common/vars/hvp.yaml"
+        - "../common/vars/ad.yaml"
+    - name: prepare Samba AD configuration file
       template:
-        src: templates/smb.j2
+        src: templates/smb-domain.j2
         dest: /etc/samba/smb.conf
         owner: root
         group: root
@@ -21,12 +21,6 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: get common vars
-      include_vars:
-        file: ../common/vars/hvp.yaml
-    - name: get common AD vars
-      include_vars:
-        file: ../common/vars/ad.yaml
     - name: obtain Kerberos ticket
       expect:
         command: "kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}"
