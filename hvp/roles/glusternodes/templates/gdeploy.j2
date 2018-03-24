@@ -595,7 +595,7 @@ services=glusterfs
 
 [volume1]
 action=create
-volname=enginedomain
+volname={{ hvp_enginedomain_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
@@ -608,7 +608,7 @@ ignore_volume_errors=no
 
 [volume2]
 action=create
-volname=vmstoredomain
+volname={{ hvp_vmstoredomain_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
@@ -621,7 +621,7 @@ ignore_volume_errors=no
 
 [volume3]
 action=create
-volname=isodomain
+volname={{ hvp_isodomain_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
@@ -635,7 +635,7 @@ ignore_volume_errors=no
 
 [volume4]
 action=create
-volname=ctdb
+volname={{ hvp_ctdb_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
@@ -647,7 +647,7 @@ ignore_volume_errors=no
 
 [volume5]
 action=create
-volname=winshare
+volname={{ hvp_winshare_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
@@ -660,13 +660,13 @@ ignore_volume_errors=no
 
 [volume6]
 action=create
-volname=unixshare
+volname={{ hvp_unixshare_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
 arbiter_count=1
 force=yes
-# TODO: use NFS-Ganesha as soon as it is available - using internal Gluster-NFS meanwhile
+# TODO: use NFS-Ganesha as soon as a suitable CTDB-based setup has been devised - using internal Gluster-NFS meanwhile
 key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,cluster.shd-max-threads,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,nfs.disable
 value=metadata-cache,0,0,on,64MB,32,full,granular,10000,8,10,off,on,off,on,on,off
 brick_dirs=/gluster_bricks/unixshare/brick1/brick
@@ -674,7 +674,7 @@ ignore_volume_errors=no
 
 [volume7]
 action=create
-volname=blockshare
+volname={{ hvp_blockshare_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
@@ -687,7 +687,7 @@ ignore_volume_errors=no
 
 [volume8]
 action=create
-volname=backup
+volname={{ hvp_backup_volume_name }}
 transport=tcp
 replica=yes
 replica_count=3
