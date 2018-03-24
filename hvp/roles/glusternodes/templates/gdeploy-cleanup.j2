@@ -10,42 +10,42 @@
 
 [volume1]
 action=delete
-volname=enginedomain
+volname={{ hvp_enginedomain_volume_name }}
 ignore_volume_errors=yes
 
 [volume2]
 action=delete
-volname=vmstoredomain
+volname={{ hvp_vmstoredomain_volume_name }}
 ignore_volume_errors=yes
 
 [volume3]
 action=delete
-volname=isodomain
+volname={{ hvp_isodomain_volume_name }}
 ignore_volume_errors=yes
 
 [volume4]
 action=delete
-volname=ctdb
+volname={{ hvp_ctdb_volume_name }}
 ignore_volume_errors=yes
 
 [volume5]
 action=delete
-volname=winshare
+volname={{ hvp_winshare_volume_name }}
 ignore_volume_errors=yes
 
 [volume6]
 action=delete
-volname=unixshare
+volname={{ hvp_unixshare_volume_name }}
 ignore_volume_errors=yes
 
 [volume7]
 action=delete
-volname=blockshare
+volname={{ hvp_blockshare_volume_name }}
 ignore_volume_errors=yes
 
 [volume8]
 action=delete
-volname=backup
+volname={{ hvp_backup_volume_name }}
 ignore_volume_errors=yes
 
 [peer]
