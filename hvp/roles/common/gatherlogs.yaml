@@ -2,11 +2,19 @@
 - name: gather diagnostic logs
   hosts: glusternodes
   tasks:
+    - name: copy script
+      copy: 
+        src: "DebuggaNodi.sh"
+        dest: "/root/bin/DebuggaNodi.sh"
+        owner: root
+        group: root
+        mode: 0755
     - name: generate diagnostic archives
       shell: "{{ item }} > /dev/null 2>&1"
       ignore_errors: yes
       register: command_result
       with_items:
+        - "/root/bin/DebuggaNodi.sh"
         - "/root/bin/backup-conf"
         - "/root/bin/backup-log"
         - "sosreport --batch --tmp-dir /root/backup --name {{ inventory_hostname }}"
