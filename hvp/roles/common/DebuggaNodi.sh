@@ -34,5 +34,5 @@
   gluster volume status enginedomain
   echo "----14------------------"
   gstatus
-)
+) >/root/log/DebuggaNodi-$(hostname)-$(date '+%Y-%m-%d-%H-%M').log 2>&1
 
