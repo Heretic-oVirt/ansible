@@ -9,12 +9,12 @@
       with_items:
         - "/root/bin/backup-conf"
         - "/root/bin/backup-log"
-        - "sosreport --batch --tmp-dir /root/backup --name {{ inventory_host }}"
+        - "sosreport --batch --tmp-dir /root/backup --name {{ inventory_hostname }}"
     - name: copy diagnostic archives
       synchronize:
         mode: pull
         recursive: yes
         partial: yes
         src: /root/backup
-        dest: "/root/backup/{{ inventory_host }}"
+        dest: "/root/backup/{{ inventory_hostname }}"
 ...
