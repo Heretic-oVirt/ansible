@@ -19,6 +19,9 @@
   hosts: gluster_master
   remote_user: root
   tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: enumerate Gluster-block based iSCSI LUNs
       command: "gluster-block list {{ hvp_blockshare_volume_name }}"
       ignore_errors: yes
@@ -35,6 +38,9 @@
   hosts: glusternodes
   remote_user: root
   tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: disable and stop the Gluster-block service
       systemd:
         name: gluster-blockd
@@ -46,6 +52,9 @@
   hosts: glusternodes
   remote_user: root
   tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: disable and stop the CTDB service
       systemd:
         name: ctdb
@@ -82,6 +91,9 @@
   hosts: localhost
   remote_user: root
   tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: prepare gdeploy cleanup configuration file
       template:
         src: templates/gdeploy-cleanup.j2
@@ -97,6 +109,9 @@
   hosts: glusternodes
   remote_user: root
   tasks:
+    - name: get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: execute LVM cleanup helper script
       vars:
         ansible_ssh_pipelining: no
