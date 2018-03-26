@@ -101,11 +101,11 @@
   hosts: ovirtengine
   remote_user: root
   pre_tasks:
-    - name: Gather facts from ALL hosts (regardless of limit or tags)
+    - name: Gather facts from all hosts (regardless of limit or tags)
       setup:
       delegate_to: "{{ item }}"
       delegate_facts: true
-      when: (got_gluster_network and hostvars[item]['gluster_eth'] is not defined) or (got_lan_network and hostvars[item]['lan_eth'] is not defined) or (got_internal_network and hostvars[item]['internal_eth'] is not defined)
+      when: got_gluster_network or got_lan_network or got_internal_network
       with_items: "{{ groups['ovirtnodes'] }}"
   tasks:
     - include: ../common/tasks/setupkeys.yaml
@@ -161,7 +161,7 @@
         interface: "{{ hostvars[item]['gluster_eth'] }}"
         state: present
         networks:
-          - "{ name: 'gluster', boot_protocol: 'static', address: {{ hostvars[inventory_hostname]['ansible_' + gluster_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[inventory_hostname]['ansible_' + gluster_eth]['ipv4'] | ipaddr('prefix') }} }"
+          - "{ name: 'gluster', boot_protocol: 'static', address: {{ hostvars[item]['ansible_' + gluster_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[item]['ansible_' + gluster_eth]['ipv4'] | ipaddr('prefix') }} }"
         check: true
         wait: true
       when: got_gluster_network
@@ -196,7 +196,7 @@
         interface: "{{ hostvars[item]['lan_eth'] }}"
         state: present
         networks:
-          - "{ name: 'lan', boot_protocol: 'static', address: {{ hostvars[inventory_hostname]['ansible_' + lan_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[inventory_hostname]['ansible_' + lan_eth]['ipv4'] | ipaddr('prefix') }} }"
+          - "{ name: 'lan', boot_protocol: 'static', address: {{ hostvars[item]['ansible_' + lan_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[item]['ansible_' + lan_eth]['ipv4'] | ipaddr('prefix') }} }"
         check: true
         wait: true
       when: got_lan_network
@@ -220,7 +220,7 @@
         interface: "{{ hostvars[item]['internal_eth'] }}"
         state: present
         networks:
-          - "{ name: 'internal', boot_protocol: 'static', address: {{ hostvars[inventory_hostname]['ansible_' + internal_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[inventory_hostname]['ansible_' + internal_eth]['ipv4'] | ipaddr('prefix') }} }"
+          - "{ name: 'internal', boot_protocol: 'static', address: {{ hostvars[item]['ansible_' + internal_eth]['ipv4'] | ipaddr('address') }}, prefix: {{ hostvars[item]['ansible_' + internal_eth]['ipv4'] | ipaddr('prefix') }} }"
         check: true
         wait: true
       when: got_internal_network
