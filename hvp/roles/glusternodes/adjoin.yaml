@@ -25,7 +25,7 @@
         set timeout 300
         spawn kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}
         match_max 100000
-        expect -re -nocase "Password for.*:.*$"
+        expect -re -nocase "password for.*:.*$"
         send -- "{{ hvp_adjoin_password }}\r"
         expect eof
       args:
