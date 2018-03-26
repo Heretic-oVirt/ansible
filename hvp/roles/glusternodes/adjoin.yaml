@@ -1,5 +1,4 @@
 ---
-# Ansible playbook for Active Directory joining of our Samba cluster
 - name: perform Samba AD configuration
   hosts: glusternodes
   remote_user: root
@@ -22,10 +21,15 @@
   remote_user: root
   tasks:
     - name: obtain Kerberos ticket
-      expect:
-        command: "kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}"
-        responses:
-          (?i)password: "{{ hvp_adjoin_password }}"
+      shell: |
+        set timeout 300
+        spawn kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}
+        match_max 100000
+        expect -re -nocase "Password for.*:.*$"
+        send -- "{{ hvp_adjoin_password }}\r"
+        expect eof
+      args:
+        executable: /usr/bin/expect
     - name: join AD domain
       command: net ads join -k osName="CentOS" osVer="7.4.1708"
       register: join_result
