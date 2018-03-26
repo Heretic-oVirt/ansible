@@ -31,11 +31,15 @@
           path: "{{ iso_sd_path }}"
           version: auto
         wait: true
-    - name upload ISO/vfd images from virtio-win package into ISO storage domain
-      expect:
-        command: "engine-iso-uploader --iso-domain={{ iso_sd_name }} upload {{ item }}"
-        responses:
-          (?i)CTRL+D to abort: "{{ password }}"
+    - name: upload ISO/vfd images from virtio-win package into ISO storage domain
+      shell: |
+        set timeout 300
+        spawn engine-iso-uploader --iso-domain={{ iso_sd_name }} upload {{ item }}
+        expect -re "CTRL.*to abort.*$"
+        send -- "{{ password }}\r"
+        expect eof
+      args:
+        executable: /usr/bin/expect
       with_items:
         - "/usr/share/virtio-win/virtio-win.iso"
         - "/usr/share/virtio-win/virtio-win_x86.vfd"
