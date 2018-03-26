@@ -35,7 +35,8 @@
       shell: |
         set timeout 300
         spawn engine-iso-uploader --iso-domain={{ iso_sd_name }} upload {{ item }}
-        expect -re "CTRL.*to abort.*$"
+        match_max 100000
+        expect -re -nocase "CTRL.*to abort.*$"
         send -- "{{ password }}\r"
         expect eof
       args:
