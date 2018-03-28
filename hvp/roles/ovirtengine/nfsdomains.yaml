@@ -34,7 +34,7 @@
     - name: upload ISO/vfd images from virtio-win package into ISO storage domain
       shell: |
         set timeout 300
-        spawn engine-iso-uploader --iso-domain={{ iso_sd_name }} upload {{ item }}
+        spawn engine-iso-uploader --force --iso-domain={{ iso_sd_name }} upload {{ item }}
         match_max 100000
         expect -re -nocase "ctrl.*to abort.*$"
         send -- "{{ password }}\r"
