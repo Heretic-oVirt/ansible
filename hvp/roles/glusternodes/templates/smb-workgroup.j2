@@ -58,17 +58,70 @@
 
 #====================== Local Share Definitions ==============================
 
-[Shares]
-   comment = Network shares
-   path = /
-   browseable = yes
+[Homes]
+   comment = User personal folder
+   path = /homes
+   browseable = no
    writable = yes
    available = yes
-   guest ok = yes
+   guest ok = no
+   valid users = %S
+   create mask = 0600
+   directory mask = 0700
+   force create mode = 00
+   force directory mode = 00
    vfs objects = glusterfs recycle
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
-   glusterfs:logfile = /var/log/samba/glusterfs-shares.log
+   glusterfs:logfile = /var/log/samba/glusterfs-homes.log
    glusterfs:volume = {{ hvp_winshare_volume_name }}
 
+[Profiles]
+   comment = User profile folder
+   path = /profiles
+   browseable = no
+   writable = yes
+   available = yes
+   guest ok = no
+   profile acls = yes
+   csc policy = disable
+   create mask = 0600
+   directory mask = 0700
+   force create mode = 00
+   force directory mode = 00
+   hide files = /desktop.ini/outlook*.lnk/*Briefcase*/$RECYCLE.BIN/
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-profiles.log
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
+
+[Groups]
+   comment = Group folders
+   path = /groups
+   browseable = yes
+   writable = yes
+   available = yes
+   guest ok = no
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-groups.log
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
+
+[Software]
+   comment = Software repository
+   path = /software
+   browseable = yes
+   writable = yes
+   available = yes
+   guest ok = no
+   vfs objects = glusterfs recycle
+   recycle:keeptree = no
+   recycle:versions = yes
+   #glusterfs:loglevel = 7
+   glusterfs:logfile = /var/log/samba/glusterfs-software.log
+   glusterfs:volume = {{ hvp_winshare_volume_name }}
