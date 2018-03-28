@@ -1,11 +1,15 @@
 ---
 - name: Disallow ssh password-based root access
-  lineinfile: dest=/etc/ssh/sshd_config
-              regexp="^PermitRootLogin"
-              line="PermitRootLogin without-password"
-              state=present
+  lineinfile:
+    state: present
+    path: /etc/ssh/sshd_config
+    insertbefore: BOF
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin without-password"
+  register: restrictrootlogin_result
 - name: Restart SSH to apply the configuration above
   systemd:
     name: sshd
     state: restarted
+  when: restrictrootlogin_result.changed
 ...
