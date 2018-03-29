@@ -1,72 +1,72 @@
 ---
-# Ansible playbook for oVirt nodes
+# Ansible playbook to initialize oVirt nodes and install oVirt Self Hosted Engine
 # Note: oVirt Hosted Engine installation will be performed on the node selected as master above
 # Note: we assume that libvirt lists the CPU models in an ordered sequence of increasing available features (apart from appending AMD models to Intel ones)
-# Note: eth interfaces enumeration taken from https://serverfault.com/a/852093
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: Gather cpu type across all hosts
+- name: Gather CPU type across all hosts
   hosts: ovirtnodes
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: gather cpu types
+    - name: Gather CPU types
       hvp_cpu_type:
-- name: Check cpu facts cluster-wide
+- name: Check CPU facts cluster-wide
   hosts: localhost
   tasks:
-    - name: make sure that the cpu vendor is homogeneous
+    - name: Make sure that the CPU vendor is homogeneous
       assert: { that: "hostvars['{{ item }}']['hvp_cpu_type']['vendor'] == hostvars[groups['ovirt_master'][0]]['hvp_cpu_type']['vendor']", msg: "CPU vendor must be the same across all hosts" }
       with_items: "{{ groups['ovirt_nonmaster_nodes'] }}"
-    - name: define common cpu index
+    - name: Define common CPU index
       set_fact:
         cpu_index: "{{ groups['ovirtnodes'] | map('extract', hostvars, ['hvp_cpu_type', 'index']) | list | sort | min }}"
-    - name: define common cpu model
+    - name: Define common CPU model
       set_fact:
         cpu_type: "model_{{ groups['ovirtnodes'] | map('extract', hostvars, 'hvp_cpu_type') | list | json_query(\"[?index == '\" + cpu_index + \"'].model\") | first }}"
-- name: perform oVirt configuration
+- name: Perform oVirt nodes configuration
   hosts: ovirtnodes
   remote_user: root
   tasks:
-    - name: define traditional ethernet facts
+    - name: Define traditional ethernet facts
+      # Note: eth interfaces enumeration taken from https://serverfault.com/a/852093
       set_fact:
         ansible_eth: "{% set ansible_eth = ansible_eth|default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ ansible_eth|list }}"
       when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether') or (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'bonding')
       with_items:
         - "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
-    - name: reset VDSM configuration
+    - name: Reset VDSM configuration
       command: vdsm-tool configure --force
       register: vdsm_result
-- name: perform oVirt Hosted Engine setup
+- name: Perform oVirt Hosted Engine setup
   hosts: ovirt_master
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: generate random MAC address for Engine appliance
+    - name: Generate random MAC address for Engine appliance
       shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
       register: mac_result
-    - name: get Engine appliance ova filename
+    - name: Get Engine appliance ova filename
       shell: echo /usr/share/ovirt-engine-appliance/ovirt-engine-appliance-*.ova
       register: ova_result
-    - name: create target directory for answer file
+    - name: Create target directory for answer file
       file:
         path: /root/etc
         state: directory
         owner: root
         group: root
         mode: 0755
-    - name: prepare hosted engine installation answer file
+    - name: Prepare Hosted Engine installation answer file
       template:
         src: templates/he-answers.j2
         dest: /root/etc/he-answers.conf
         owner: root
         group: root
         mode: 0644
-    - name: configure DHCPd reservation for Engine vm
+    - name: Configure DHCPd reservation for Engine vm
       template:
         src: templates/dhcpd-static-leases.j2
         dest: /etc/dhcp/dhcpd-static-leases.conf
@@ -74,12 +74,12 @@
         group: root
         mode: 0644
       delegate_to: localhost
-    - name: apply DHCPd reconfiguration
+    - name: Apply DHCPd reconfiguration
       systemd:
         name: dhcpd
         state: restarted
       delegate_to: localhost
-    - name: perform actual Hosted Engine setup
+    - name: Perform actual Hosted Engine setup
       vars:
         ansible_ssh_pipelining: no
       command: hosted-engine --deploy --config-append=/root/etc/he-answers.conf
