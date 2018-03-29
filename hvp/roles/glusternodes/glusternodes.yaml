@@ -1,34 +1,34 @@
 ---
-# Ansible playbook for GlusterFS nodes
-# Note: CTDB-based configurations demanded to separate playbook (needs all oVirt nodes added to cluster and all oVirt networks defined in order to get proper interface/bridge names)
+# Ansible playbook to setup GlusterFS trusted pool and volumes by means of gDeploy
+# Note: CTDB-based configurations demanded to separate playbook (needs all oVirt nodes added to cluster and all oVirt networks defined in order to get proper interface/bridge names in the general case)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: inspect gluster nodes
+- name: Inspect gluster nodes
   hosts: glusternodes
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: gather suitable disks
+    - name: Gather suitable disks
       hvp_free_disks: min_size_bytes=100000000000 accept_ssds=1
-    - name: gather suitable ssds
+    - name: Gather suitable SSDs
       hvp_free_ssds: min_size_bytes=100000000000
-- name: perform gdeploy-based Gluster configuration
+- name: Perform gDeploy-based Gluster configuration
   hosts: localhost
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: prepare gdeploy setup configuration file
+    - name: Prepare gDeploy setup configuration file
       template:
         src: templates/gdeploy.j2
         dest: "{{ playbook_dir }}/gdeploy.conf"
         owner: root
         group: root
         mode: 0644
-    - name: perform actual gdeploy-based Gluster configuration
+    - name: Perform actual gDeploy-based Gluster configuration
       command: gdeploy -k -vv -c "{{ playbook_dir }}/gdeploy.conf"
       register: gdeploy_result
 ...
