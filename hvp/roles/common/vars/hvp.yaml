@@ -30,6 +30,8 @@ hvp_spice_pki_subject: "C=EN, L=Test, O=Test, CN=Test"
 hvp_pki_subject: "/C=EN/L=Test/O=Test/CN=Test"
 hvp_ca_subject: "/C=EN/L=Test/O=Test/CN=TestCA"
 hvp_admin_username: hvpadmin
+hvp_email_sender: root@localhost
+hvp_email_receiver: monitoring@localhost
 
 # HVP Gluster settings
 # TODO: derive proper values for Gluster volume sizes from user settings and/or available space
