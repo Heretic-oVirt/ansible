@@ -22,7 +22,7 @@
     - name: Execute the oVirt Hosted Engine cleanup helper script
       vars:
         ansible_ssh_pipelining: no
-      command: /usr/sbin/ovirt-hosted-engine-cleanup -q
+      command: ovirt-hosted-engine-cleanup -q
       register: enginecleanup_result
     - name: Mount the Gluster volume intended for Self Hosted Engine
       command: "mount -t glusterfs localhost:/{{ hvp_enginedomain_volume_name }} /mnt"
