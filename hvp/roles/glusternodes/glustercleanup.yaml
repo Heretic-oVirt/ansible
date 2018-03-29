@@ -1,32 +1,31 @@
 ---
-# Ansible playbook for GlusterFS nodes unconfiguration (cleanup)
+# Ansible playbook to completely revert GlusterFS nodes configuration (cleanup)
+# Note: the aim is to undo any effect of running the glusternodes.yaml and storageservices.yaml playbooks
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: inspect gluster nodes
+- name: Inspect Gluster nodes
   hosts: glusternodes
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
 # TODO: write a suitable hvp_gluster_disks fact-finding module to drive the LVM-cleanup part in gdeploy-cleanup.j2
-#    - name: gather Gluster-used disks
+# Note: as a temporary workaround we use an external helper script lvm-cleanup.sh
+#    - name: Gather Gluster-used disks
 #      hvp_gluster_disks: include_ssd=1
-    - name: get common vars
-      include_vars:
-        file: ../common/vars/hvp.yaml
 - name: Delete Gluster-block based volumes
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: enumerate Gluster-block based iSCSI LUNs
+    - name: Enumerate Gluster-block based iSCSI LUNs
       command: "gluster-block list {{ hvp_blockshare_volume_name }}"
       ignore_errors: yes
       register: enumerateluns_result
-    - name: delete all iSCSI LUNs found
+    - name: Delete all iSCSI LUNs found
       command: "gluster-block delete {{ hvp_blockshare_volume_name }}/{{ item }}"
       ignore_errors: yes
       register: deleteluns_result
@@ -38,10 +37,10 @@
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: disable and stop the Gluster-block service
+    - name: Disable and stop the Gluster-block service
       systemd:
         name: gluster-blockd
         enabled: False
@@ -52,67 +51,67 @@
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: disable and stop the CTDB service
+    - name: Disable and stop the CTDB service
       systemd:
         name: ctdb
         enabled: False
         state: stopped
         no_block: no
-    - name: disable and stop the RT bandwidth configuration
+    - name: Disable and stop the RT bandwidth configuration
       systemd:
         name: cgroup-rt-bandwidth
         enabled: False
         state: stopped
         no_block: no
-    - name: disable and stop the wait service for Gluster ctdb volume
+    - name: Disable and stop the wait service for Gluster ctdb volume
       systemd:
         name: gluster-ctdb-wait-online
         enabled: False
         state: stopped
         no_block: no
-    - name: disable and stop the local mounting of the Gluster ctdb volume
+    - name: Disable and stop the local mounting of the Gluster ctdb volume
       systemd:
         name: gluster-lock.mount
         enabled: False
         state: stopped
         no_block: no
-    - name: copy LVM cleanup helper script
-      # TODO: remove when properly implemented by means of gDeploy
+    - name: Copy the LVM cleanup helper script
+      # TODO: remove when properly implemented by means of fact finding above and gDeploy below
       copy:
         src: lvm-cleanup.sh
         dest: /usr/local/sbin/lvm-cleanup.sh
         owner: root
         group: root
         mode: 0755
-- name: perform gdeploy-based Gluster unconfiguration
+- name: Perform gDeploy-based Gluster unconfiguration
   hosts: localhost
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: prepare gdeploy cleanup configuration file
+    - name: Prepare gDeploy cleanup configuration file
       template:
         src: templates/gdeploy-cleanup.j2
         dest: "{{ playbook_dir }}/gdeploy-cleanup.conf"
         owner: root
         group: root
         mode: 0644
-    - name: perform actual gdeploy-based Gluster unconfiguration
+    - name: Perform actual gDeploy-based Gluster unconfiguration
       command: gdeploy -k -vv -c "{{ playbook_dir }}/gdeploy-cleanup.conf"
       register: gdeploy_cleanup_result
-- name: perform LVM cleanup on nodes
-  # TODO: remove when properly implemented by means of gDeploy
+- name: Perform LVM cleanup on nodes
+  # TODO: remove when properly implemented by means of fact-finding and gDeploy above
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: execute LVM cleanup helper script
+    - name: Execute the LVM cleanup helper script
       vars:
         ansible_ssh_pipelining: no
       command: /usr/local/sbin/lvm-cleanup.sh
