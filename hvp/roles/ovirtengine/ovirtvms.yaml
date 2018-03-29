@@ -1,6 +1,8 @@
 ---
-# Ansible playbook for oVirt VMs creation
-# Note: Ansible oVirt management thanks to Simone Tiraboschi
+# Ansible playbook for automated oVirt VMs creation
+# Note: Thanks to Simone Tiraboschi for initial Ansible oVirt management hints
+# TODO: find a way to extract minimum desired parameters from local Kickstart file and use those for vm creation
+# TODO: find a way to create a vm from scratch and make it boot once from network with Kickstart installation (on-the-fly configure PXELinux on installer machine using pre-defined or discovered MAC address)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
