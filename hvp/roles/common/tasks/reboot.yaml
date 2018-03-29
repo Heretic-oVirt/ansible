@@ -1,18 +1,14 @@
 ---
 - name: Reboot host
-  remote_user: root
-  gather_facts: False
-  tasks:
-    - name: Reboot
-      shell: nohup bash -c "sleep 20 && systemctl reboot" &
-      async: 1
-      poll: 0
-      register: reboot_result
-    - name: Wait for host to come back
-      wait_for_connection:
-        delay: 50
-        sleep: 5
-        timeout: 300
-        # Note: sometimes it seems that reboot results in poweroff instead
-        ignore_errors: true
+  shell: nohup bash -c "sleep 20 && systemctl reboot" &
+  async: 1
+  poll: 0
+  register: reboot_result
+- name: Wait for host to come back
+  wait_for_connection:
+    delay: 50
+    sleep: 5
+    timeout: 300
+    # Note: sometimes it seems that reboot results in poweroff instead
+    ignore_errors: true
 ...
