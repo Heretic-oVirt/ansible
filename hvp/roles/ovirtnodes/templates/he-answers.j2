@@ -55,5 +55,5 @@ OVEHOSTED_VDSM/cpu=str:{{ hostvars['localhost']['cpu_type'] }}
 OVEHOSTED_VDSM/consoleType=str:vnc
 OVEHOSTED_NOTIF/smtpPort=str:25
 OVEHOSTED_NOTIF/smtpServer=str:localhost
-OVEHOSTED_NOTIF/sourceEmail=str:root@localhost
-OVEHOSTED_NOTIF/destEmail=str:monitoring@localhost
+OVEHOSTED_NOTIF/sourceEmail=str:{{ hvp_email_sender }}
+OVEHOSTED_NOTIF/destEmail=str:{{ hvp_email_receiver }}
