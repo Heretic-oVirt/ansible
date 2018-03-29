@@ -1,14 +1,16 @@
 ---
+# Ansible playbook to configure and start Gluster-block and CTDB/Samba/Gluster-NFS for iSCSI/CIFS/NFS sharing
+# TODO: substitute Gluster-NFS with NFS-Ganesha as soon as a proper CTDB-based configuration for NFS-Ganesha has been devised
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: inspect gluster nodes
+- name: Inspect Gluster nodes
   hosts: glusternodes
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: "{{ item }}"
       with_items:
@@ -18,11 +20,11 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: mount the Gluster volume intended for CIFS sharing
+    - name: Mount the Gluster volume intended for CIFS sharing
       command: "mount -t glusterfs localhost:/{{ hvp_winshare_volume_name }} /mnt"
       register: winsharemount_result
       warn: false
-    - name: create the toplevel folders intended for CIFS sharing
+    - name: Create the toplevel folders intended for CIFS sharing
       file:
         path: "{{ item.path }}"
         state: directory
@@ -35,7 +37,7 @@
         - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
         - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
       when: winsharemount_result.rc == 0
-    - name: unmount the Gluster volume intended for CIFS sharing
+    - name: Unmount the Gluster volume intended for CIFS sharing
       command: "umount -l /mnt"
       register: winshareumount_result
       warn: false
@@ -43,11 +45,11 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: mount the Gluster volume intended for NFS sharing
+    - name: Mount the Gluster volume intended for NFS sharing
       command: "mount -t glusterfs localhost:/{{ hvp_unixshare_volume_name }} /mnt"
       register: unixsharemount_result
       warn: false
-    - name: create the toplevel folders intended for NFS sharing
+    - name: Create the toplevel folders intended for NFS sharing
       file:
         path: "{{ item.path }}"
         state: directory
@@ -59,7 +61,7 @@
         - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
         - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
       when: unixsharemount_result.rc == 0
-    - name: unmount the Gluster volume intended for NFS sharing
+    - name: Unmount the Gluster volume intended for NFS sharing
       command: "umount -l /mnt"
       register: unixshareumount_result
       warn: false
@@ -67,31 +69,31 @@
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: enable and start the Gluster-block service
+    - name: Enable and start the Gluster-block service
       systemd:
         name: gluster-blockd
         enabled: True
         state: started
         no_block: no
-- name: Create Gluster-block based volumes
+- name: Create Gluster-block based LUNs
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: create iSCSI LUNs
+    - name: Create iSCSI LUNs
       command: "gluster-block create {{ hvp_blockshare_volume_name }}/block{{ item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ item.1 }}"
       register: createblock_result
       with_indexed_items: "{{ hvp_lun_sizes }}"
-    - name: extract iSCSI LUN usernames
+    - name: Extract iSCSI LUN usernames
       set_fact: lun_usernames="{{ lun_usernames }} + [{{ createblock_result.results[item.0].stdout | regex_search(username_regexp,'\\1') }}]"
       vars:
         username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
       with_indexed_items: "{{ createblock_result.results }}"
-    - name: extract iSCSI LUN passwords
+    - name: Extract iSCSI LUN passwords
       set_fact: lun_passwords="{{ lun_passwords }} + [{{ createblock_result.results[item.0].stdout | regex_search(password_regexp,'\\1') }}]"
       vars:
         password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
       with_indexed_items: "{{ createblock_result.results }}"
-    - name: save iSCSI LUN usernames/passwords
+    - name: Save iSCSI LUN usernames/passwords
       copy:
         content: |
           {% for username in lun_usernames %}
@@ -107,32 +109,32 @@
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: enable and start the wait service for Gluster ctdb volume
+    - name: Enable and start the wait service for Gluster CTDB volume
       systemd:
         name: gluster-ctdb-wait-online
         enabled: True
         state: started
         no_block: no
-    - name: enable and start the local mounting of the Gluster ctdb volume
+    - name: Enable and start the local mounting of the Gluster CTDB volume
       systemd:
         name: gluster-lock.mount
         enabled: True
         state: started
         no_block: no
-    - name: enable and start the RT bandwidth configuration
+    - name: Enable and start the RT bandwidth configuration
       systemd:
         name: cgroup-rt-bandwidth
         enabled: True
         state: started
         no_block: no
-    - name: prepare Samba Workgroup configuration file
+    - name: Prepare Samba Workgroup configuration file
       template:
         src: templates/smb-workgroup.j2
         dest: /etc/samba/smb.conf
         owner: root
         group: root
         mode: 0644
-    - name: enable and start the CTDB service
+    - name: Enable and start the CTDB service
       systemd:
         name: ctdb
         enabled: True
@@ -142,9 +144,9 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: wait for Samba to become ready on the host
+    - name: Wait for Samba to become ready on the host
       wait_for: port=445 timeout=300
-    - name: configure local root user
+    - name: Configure local root user
       shell: "echo -e '{{ ansible_ssh_pass }}\n{{ ansible_ssh_pass }}\n' | smbpasswd -s -a root"
       register: smbpasswd_result
 ...
