@@ -1,0 +1,6 @@
+PATH bios
+PROMPT 0
+TIMEOUT 0
+LABEL bootvm
+  kernel linux/centos/vmlinuz
+  append initrd=linux/centos/initrd.img inst.stage2=http://twilight.mgmt.private/hvp-repos/el7/centos quiet nomodeset elevator=deadline inst.ks=http://twilight.mgmt.private/hvp-repos/el7/ks/{{ vm_kickstart_file }}
