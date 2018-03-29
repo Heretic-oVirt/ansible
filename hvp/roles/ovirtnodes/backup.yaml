@@ -1,9 +1,11 @@
 ---
-- name: install and configure Bareos on nodes
+# Ansible playbook to setup a complete Bareos infrastructure (Director on Engine, nodes as storage daemons)
+# TODO: install, configure and enable/start Bareos file daemons on every guest vm
+- name: Install and configure Bareos on oVirt nodes
   hosts: ovirtnodes
   remote_user: root
   tasks:
-    - name: install Bareos-related packages on nodes
+    - name: Install Bareos-related packages on nodes
       yum:
         name: "{{ item }}"
         state: latest
@@ -13,19 +15,19 @@
         - bareos-filedaemon-glusterfs-plugin
         - bareos-storage
         - bareos-storage-glusterfs
-    - name: cleanup Bareos rpm leftovers on nodes
+    - name: Cleanup Bareos rpm leftovers on nodes
       command: "{{ item }}"
-      register: cleanupnodesbareosleftovers_result
+      register: cleanupnodesbareosinstleftovers_result
       with_items:
         - "find /etc/bareos -type f -name '*.rpmnew' -exec rename .rpmnew '' '{}' ';'"
         - "find /etc/bareos -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
-    - name: create random passwords for file and storage daemons on nodes
+    - name: Create random passwords for file and storage daemons on nodes
       set_fact:
         bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_sd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_sd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-    - name: copy template files on nodes
+    - name: Copy Gluster plugins configuration template files on oVirt nodes
       copy:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
@@ -33,7 +35,7 @@
       with_items:
         - { src: "/etc/bareos/bareos-dir.d/storage/Gluster.conf.example", dest: "/etc/bareos/bareos-dir.d/storage/Gluster.conf" }
         - { src: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf.example", dest: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf" }
-    - name: set parameters in configuration files on nodes
+    - name: Set parameters in configuration files on oVirt nodes
       lineninfile:
         state: present
         path: "{{ item.path }}"
@@ -53,13 +55,13 @@
         - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: "\1Device Options = \"uri=gluster://{{ ansible_hostname }}.{{ hvp_gluster_domainname }}/{{ hvp_backup_volume_name }}/bareos\"" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_dir_password'] }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Address", line: "\1Address = \"{{ inventory_hostname }}\"" }
-- name: install, configure and start Bareos on Engine
+- name: Install, configure and start Bareos on Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
   # TODO: prepare Bareos DB on Engine (use embedded PostgreSQL)
   # TODO: configure bareos-webui on Engine (use embedded Apache)
-    - name: install Bareos-related packages on Engine
+    - name: Install Bareos-related packages on Engine
       yum:
         name: "{{ item }}"
         state: latest
@@ -70,20 +72,20 @@
         - bareos-database-postgresql
         - bareos-database-tools
         - bareos-webui
-    - name: cleanup Bareos rpm leftovers on Engine
+    - name: Cleanup Bareos rpm leftovers on Engine
       command: "{{ item }}"
-      register: cleanupenginebareosleftovers_result
+      register: cleanupenginebareosinstleftovers_result
       with_items:
         - "find /etc/bareos -type f -name '*.rpmnew' -exec rename .rpmnew '' '{}' ';'"
         - "find /etc/bareos -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
-    - name: create random passwords for file and director daemons on Engine
+    - name: Create random passwords for file and director daemons on Engine
       set_fact:
         bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_dir_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_dir_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
         bareos_dir_db_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits encrypt=no') }}"
-    - name: set parameters in configuration files on Engine
+    - name: Set parameters in configuration files on Engine
       # TODO: find if/where to set the director monitoring password
       # TODO: configure filesets (add minimal data-only filesets for Linux and Windows to exclude OS and apps)
       # TODO: configure jobdefs (add templates for jobs below)
@@ -110,7 +112,7 @@
         - { path: "/etc/bareos/bareos-dir.d/console/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_dir_mon_password'] }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf", regexp: "^([[:space:]]*)dbdriver", line: "\1dbdriver = \"postgresql\"" }
         - { path: "/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf", regexp: "^([[:space:]]*)dbpassword", line: "\1dbpassword = \"{{ hostvars[inventory_hostname]['bareos_dir_db_password'] }}\"" }
-    - name: enable and start Bareos-related services
+    - name: Enable and start Bareos-related services on Engine
       systemd:
         name: "{{ item }}"
         enabled: True
@@ -119,11 +121,11 @@
       with_items:
         - bareos-fd
         - bareos-dir
-- name: start Bareos on nodes
+- name: Start Bareos on oVirt nodes
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: enable and start Bareos-related services
+    - name: Enable and start Bareos-related services on oVirt nodes
       systemd:
         name: "{{ item }}"
         enabled: True
@@ -132,5 +134,4 @@
       with_items:
         - bareos-fd
         - bareos-sd
-# TODO: install, configure and enable/start Bareos file daemons on vms
 ...
