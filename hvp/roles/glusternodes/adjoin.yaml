@@ -1,26 +1,27 @@
 ---
-- name: perform Samba AD configuration
+# Ansible playbook to join the Gluster-based Samba clustered fileserver to the internal oVirt-hosted AD domain
+- name: Perform Samba AD configuration
   hosts: glusternodes
   remote_user: root
   tasks:
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: "{{ item }}"
       with_items:
         - "../common/vars/hvp.yaml"
         - "../common/vars/ad.yaml"
-    - name: prepare Samba AD configuration file
+    - name: Prepare Samba domain-based configuration file
       template:
         src: templates/smb-domain.j2
         dest: /etc/samba/smb.conf
         owner: root
         group: root
         mode: 0644
-- name: perform Samba cluster AD joining
+- name: Perform Samba cluster AD joining
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: obtain Kerberos ticket
+    - name: Obtain Kerberos ticket
       shell: |
         set timeout 300
         spawn kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}
@@ -30,13 +31,13 @@
         expect eof
       args:
         executable: /usr/bin/expect
-    - name: join AD domain
-      command: net ads join -k osName="CentOS" osVer="7.4.1708"
+    - name: Join AD domain
+      shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)"
       register: join_result
-    - name: remove Kerberos ticket
+    - name: Remove Kerberos ticket
       command: kdestroy
       register: kdestroy_result
-- name: restart Samba services
+- name: Reload Samba configuration
   hosts: glusternodes
   remote_user: root
   tasks:
