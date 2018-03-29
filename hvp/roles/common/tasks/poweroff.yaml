@@ -1,13 +1,9 @@
 ---
-- name: Power down host
-  remote_user: root
-  gather_facts: False
-  tasks:
-    - name: Poweroff
-      shell: nohup bash -c "sleep 20 && systemctl poweroff" &
-      async: 1
-      poll: 0
-      register: poweroff_result
-    - name: Wait for host to go down
-      local_action: wait_for host="{{ inventory_hostname }}" port=22 search_regex=OpenSSH state=stopped timeout=300 delay=0 sleep=1
+- name: Poweroff
+  shell: nohup bash -c "sleep 20 && systemctl poweroff" &
+  async: 1
+  poll: 0
+  register: poweroff_result
+- name: Wait for host to go down
+  local_action: wait_for host="{{ inventory_hostname }}" port=22 search_regex=OpenSSH state=stopped timeout=300 delay=0 sleep=1
 ...
