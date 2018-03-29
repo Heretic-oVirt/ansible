@@ -1,22 +1,27 @@
 ---
-# Ansible playbook for nodes nic bonding forced LACP setup
-# Note: the following will powerdown the nodes at the end so that manual switch configuration can be performed before powering them up again
-# Note: the rationale behind this playbook is that LACP seriously interfers both with standard PXE booting and our custom network bonding autodetection logic above - use AP/RR during installation, then use this to convert every bond to LACP afterwards
+# Ansible playbook to force nodes nic bonding in LACP mode
+# Note: the following will powerdown the nodes at the end so that manual switch configuration can be safely performed before powering them up again
+# Note: no maintenance nor other services graceful shutdown are performed before powerdown, so either launch this before configuring nodes or enact maintenance manually before launching this
+# Note: the rationale behind this playbook is that LACP seriously interfers both with standard PXE booting and our custom network bonding autodetection logic - use AP/RR during installation, then use this to convert every bond to LACP afterwards
+# Note: currently, it is an all or nothing choice wrt bonded interfaces
+# TODO: find a way to apply LACP only to certain bonded interfaces (maybe based on network type, eg: only gluster and lan)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: reconfigure gluster nodes bonding to LACP mode
+- name: Reconfigure all nodes bonding interfaces to LACP mode
   hosts: glusternodes
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: perform actual bonding reconfiguration
-      lineinfile: dest="{{ item }}"
-                  regexp="^BONDING_OPTS="
-                  line="BONDING_OPTS=\"mode=802.3ad xmit_hash_policy=layer2+3 miimon=100\""
-                  state=present
+    - name: Perform actual bonding reconfiguration
+      lineinfile:
+        state: present
+        path: "{{ item }}"
+        insertafter: EOF
+        regexp: "^BONDING_OPTS="
+        line: "BONDING_OPTS=\"mode=802.3ad xmit_hash_policy=layer2+3 miimon=100\""
       with_fileglob:
         - "/etc/sysconfig/network-scripts/ifcfg-bond*"
-    - include: ../common/tasks/shutdown.yaml
+    - include: ../common/tasks/poweroff.yaml
 ...
