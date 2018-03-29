@@ -1,5 +1,5 @@
 ---
-- name: Poweroff
+- name: Poweroff host
   shell: nohup bash -c "sleep 20 && systemctl poweroff" &
   async: 1
   poll: 0
