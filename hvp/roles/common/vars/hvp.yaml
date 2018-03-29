@@ -33,6 +33,11 @@ hvp_admin_username: hvpadmin
 hvp_email_sender: root@localhost
 hvp_email_receiver: monitoring@localhost
 
+## HVP OVN settings
+hvp_ovn_private_network_names:
+  - dmz0
+  - dmz1
+
 # HVP Gluster settings
 # TODO: derive proper values for Gluster volume sizes from user settings and/or available space
 # TODO: dynamically determine arbiter sizes for each Gluster volume
