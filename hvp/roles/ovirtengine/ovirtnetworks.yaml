@@ -1,17 +1,18 @@
 ---
+# Ansible playbook to perform network configuration on oVirt Cluster (both OVN and legacy networks)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: perform OVN configuration on oVirt Engine
+- name: Perform OVN configuration on oVirt Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: install OVN-related packages
+    - name: Install OVN-related packages
       # TODO: lower log level in /etc/ovirt-provider-ovn/logger.conf
       yum:
         name: "{{ item }}"
@@ -22,7 +23,7 @@
         - openvswitch-ovn-central
         - python-openvswitch
         - ovirt-provider-ovn
-    - name: enable and start OVN-related services
+    - name: Enable and start OVN-related services
       systemd:
         name: "{{ item }}"
         enabled: True
@@ -30,66 +31,64 @@
         no_block: no
       with_items:
         - ovirt-provider-ovn
-    - name: reload firewalld to detect OVN-provider service
+    - name: Reload firewalld to detect OVN-provider service
       systemd:
         name: firewalld
         state: reloaded
         no_block: no
-    - name: allow OVN-provider communications
+    - name: Allow OVN-provider communications
       firewalld:
         service: ovirt-provider-ovn
         permanent: True
         immediate: True
         state: enabled
-    - name: allow OVN-components communications - 1
+    - name: Allow OVN-components communications - South
       firewalld:
         rich_rule: 'rule family="ipv4" port protocol="tcp" port="6641" accept'
         permanent: True
         immediate: True
         state: enabled
-    - name: allow OVN-components communications - 2
+    - name: Allow OVN-components communications - North
       firewalld:
         rich_rule: 'rule family="ipv4" port protocol="tcp" port="6642" accept'
         permanent: True
         immediate: True
         state: enabled
-    - name: configure OVN central to listen on ports - 1
+    - name: Configure OVN central to listen on ports - South
       command: ovn-sbctl set-connection ptcp:6642
       register: centralconf1_result
-    - name: configure OVN central to listen on ports - 2
+    - name: Configure OVN central to listen on ports - North
       command: ovn-nbctl set-connection ptcp:6641
       register: centralconf2_result
-- name: perform OVN configuration on hosts
+- name: Perform OVN configuration on oVirt nodes
   hosts: ovirtnodes
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
     - include: ../common/tasks/securessh.yaml
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: configure OVN VIF driver
+    - name: Configure OVN VIF driver
       command: vdsm-tool ovn-config "{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}" "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       register: vifconf_result
-- name: perform OVN networks creation on oVirt Engine
+- name: Perform OVN networks creation on oVirt Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
-    - name: create OVN networks
+    - name: Create OVN private networks
       command: "ovn-nbctl --may-exist ls-add {{ item }}"
       register: createovnnetwork_result
-      with_items:
-        - dmz0
-        - dmz1
-- name: perform network discovery on hosts
+      with_items: "{{ hvp_ovn_private_network_names }}"
+- name: Perform network discovery on hosts
   hosts: ovirtnodes
   remote_user: root
   tasks:
-    - name: define Gluster network interface
+    - name: Define Gluster network interface
       set_fact:
         gluster_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(gluster_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_gluster_network
-    - name: define LAN network interface
+    - name: Define LAN network interface
       set_fact:
         lan_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(lan_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_lan_network
@@ -100,6 +99,7 @@
 - name: Perform global oVirt networks configuration through the Engine
   hosts: ovirtengine
   remote_user: root
+  # TODO: there is a visibility/syntax error on using the network interface facts established above - trying to work around here
   pre_tasks:
     - name: Gather facts from all hosts (regardless of limit or tags)
       setup:
@@ -119,7 +119,7 @@
         username: "{{ username }}"
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
-    - name: add external network provider for OVN
+    - name: Add external network provider for OVN
       # TODO: properly setup certificates for OVN communications and switch to HTTPS
       ovirt_external_provider:
         auth: "{{ ovirt_auth }}"
@@ -131,7 +131,7 @@
         read_only: false
         url: "http://{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}:9696"
         wait: true
-    - name: qualify Management network when it is the only one
+    - name: Qualify Management network when it is the only one
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
         name: ovirtmgmt
@@ -142,7 +142,7 @@
         vm_network: true
         wait: true
       when: not got_gluster_network
-    - name: add Gluster network
+    - name: Add Gluster network
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
         name: gluster
@@ -154,7 +154,7 @@
         vm_network: false
         wait: true
       when: got_gluster_network
-    - name: add node interfaces to Gluster network
+    - name: Add node interfaces to Gluster network
       ovirt_host_networks:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
@@ -166,7 +166,7 @@
         wait: true
       when: got_gluster_network
       with_items: "{{ groups['ovirtnodes'] }}"
-    - name: qualify Management network when LAN network is absent
+    - name: Qualify Management network when LAN network is absent
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
         name: ovirtmgmt
@@ -177,7 +177,7 @@
         vm_network: true
         wait: true
       when: not got_lan_network
-    - name: add LAN network
+    - name: Add LAN network
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
         name: lan
@@ -189,7 +189,7 @@
         vm_network: true
         wait: true
       when: got_lan_network
-    - name: add node interfaces to LAN network
+    - name: Add node interfaces to LAN network
       ovirt_host_networks:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
@@ -201,7 +201,7 @@
         wait: true
       when: got_lan_network
       with_items: "{{ groups['ovirtnodes'] }}"
-    - name: add Internal network
+    - name: Add Internal network
       ovirt_networks:
         auth: "{{ ovirt_auth }}"
         name: internal
@@ -213,7 +213,7 @@
         vm_network: true
         wait: true
       when: got_internal_network
-    - name: add node interfaces to Internal network
+    - name: Add node interfaces to Internal network
       ovirt_host_networks:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
