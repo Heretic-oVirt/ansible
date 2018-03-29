@@ -42,7 +42,7 @@
         # Note: .trashcan and .trashcan/internal_op cannot be deleted, so we must ignore errors
       ignore_errors: yes
       with_items: "{{ enginevolumeentries_result }}"
-    - name: Unmount the Gluster volume intended for Engine hosting
+    - name: Unmount the Gluster volume intended for Self Hosted Engine
       command: "umount -l /mnt"
       register: enginevolumeumount_result
       warn: false
