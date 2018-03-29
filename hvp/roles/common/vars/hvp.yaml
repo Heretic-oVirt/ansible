@@ -41,13 +41,13 @@ hvp_ovn_private_network_names:
 # HVP Gluster settings
 # TODO: derive proper values for Gluster volume sizes from user settings and/or available space
 # TODO: dynamically determine arbiter sizes for each Gluster volume
-hvp_enginedomain_volume_name: enginedomain
+hvp_enginedomain_volume_name: engine
 hvp_enginedomain_size: "{{ (hvp_engine_imgsize * 1.2) | int | abs }}GB"
 hvp_enginedomain_arbitersize: "1GB"
-hvp_vmstoredomain_volume_name: vmstoredomain
+hvp_vmstoredomain_volume_name: vmstore
 hvp_vmstoredomain_size: "500GB"
 hvp_vmstoredomain_arbitersize: "1GB"
-hvp_isodomain_volume_name: isodomain
+hvp_isodomain_volume_name: iso
 hvp_isodomain_size: "30GB"
 hvp_isodomain_arbitersize: "1GB"
 hvp_ctdb_volume_name: ctdb
@@ -106,17 +106,17 @@ glusterfs_addr: "{{ groups['gluster_master'] | first }}"
 glusterfs_mountopts: "backup-volfile-servers={{ groups['gluster_nonmaster_nodes'] | join(':') }},fetch-attempts=2,log-level=WARNING"
 iso_sd_type: nfs
 iso_sd_addr: "{{ hvp_storage_name }}.{{ hvp_management_domainname }}"
-iso_sd_name: iso_domain
+iso_sd_name: "{{ hvp_isodomain_volume_name + '_domain' }}"
 iso_sd_path: "/{{ hvp_isodomain_volume_name }}"
 iso_sd_mountopts: 
 vmstore_sd_type: glusterfs
 vmstore_sd_addr: "{{ glusterfs_addr }}"
-vmstore_sd_name: vmstore_domain
+vmstore_sd_name: "{{ hvp_vmstoredomain_volume_name + '_domain' }}"
 vmstore_sd_path: "/{{ hvp_vmstoredomain_volume_name }}"
 vmstore_sd_mountopts: "{{ glusterfs_mountopts }}"
 engine_sd_type: glusterfs
 engine_sd_addr: "{{ glusterfs_addr }}"
-engine_sd_name: engine_domain
+engine_sd_name: "{{ hvp_enginedomain_volume_name + '_domain' }}"
 engine_sd_path: "/{{ hvp_enginedomain_volume_name }}"
 engine_sd_mountopts: "{{ glusterfs_mountopts }}"
 
