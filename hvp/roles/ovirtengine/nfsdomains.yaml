@@ -1,14 +1,16 @@
 ---
+# Ansible playbook to configure and initialize NFS storage domains in oVirt Cluster
+# Note: Done here since NFS sharing needs CTDB up (for HA/LB IPs to be active) and that in turn needs oVirt networks configured (for NFS-exporting network bridges to be defined)
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
     - include: ../common/tasks/createkeys.yaml
-- name: perform oVirt configuration
+- name: Perform NFS-based storage domains definition inside oVirt Cluster
   hosts: ovirtengine
   remote_user: root
   tasks:
     - include: ../common/tasks/setupkeys.yaml
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Obtain oVirt Engine SSO token
@@ -19,6 +21,7 @@
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
     - name: Add ISO storage domain
+      # Note: the ISO storage domain must be NFS to be reachable from the Engine vm (which has no access to the Gluster network)
       ovirt_storage_domains:
         auth: "{{ ovirt_auth }}"
         name: "{{ iso_sd_name }}"
@@ -31,7 +34,7 @@
           path: "{{ iso_sd_path }}"
           version: auto
         wait: true
-    - name: upload ISO/vfd images from virtio-win package into ISO storage domain
+    - name: Upload ISO/vfd images from virtio-win package into ISO storage domain
       shell: |
         set timeout 300
         spawn engine-iso-uploader --force --iso-domain={{ iso_sd_name }} upload {{ item }}
