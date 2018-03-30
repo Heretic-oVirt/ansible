@@ -1,4 +1,5 @@
 ---
+# Ansible flat tasks file to be included in playbooks
 - name: Reboot host
   shell: nohup bash -c "sleep 20 && systemctl reboot" &
   async: 1
