@@ -12,6 +12,7 @@
       when: generate_sosreport
     - name: Generate custom storage status report
       script: files/inspect-node-storage.sh
+      register: inspectnodestorage_result
     - name: Generate common HVP configuration/log archives
       shell: "{{ item }} > /dev/null 2>&1"
       ignore_errors: yes
