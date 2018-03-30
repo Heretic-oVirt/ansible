@@ -1,4 +1,5 @@
 ---
+# Ansible flat tasks file to be included in playbooks
 - name: Poweroff host
   shell: nohup bash -c "sleep 20 && systemctl poweroff" &
   async: 1
