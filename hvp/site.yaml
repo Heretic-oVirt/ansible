@@ -1,13 +1,13 @@
 ---
 # Global Ansible playbook for the whole process
-- include: roles/glusternodes/glusternodes.yaml
-- include: roles/ovirtnodes/ovirtnodes.yaml
-- include: roles/ovirtengine/clusterdcsetup.yaml
-- include: roles/ovirtengine/enginevmreconf.yaml
-- include: roles/ovirtengine/ovirtnetworks.yaml
-- include: roles/glusternodes/storageservices.yaml
-- include: roles/ovirtengine/nfsdomains.yaml
-#- include: roles/ovirtengine/ovirtvms.yaml
-#- include: roles/glusternodes/adjoin.yaml
-- include: roles/ovirtnodes/backup.yaml
+- import_playbook: roles/glusternodes/glusternodes.yaml
+- import_playbook: roles/ovirtnodes/ovirtnodes.yaml
+- import_playbook: roles/ovirtengine/clusterdcsetup.yaml
+- import_playbook: roles/ovirtengine/enginevmreconf.yaml
+- import_playbook: roles/ovirtengine/ovirtnetworks.yaml
+- import_playbook: roles/glusternodes/storageservices.yaml
+- import_playbook: roles/ovirtengine/nfsdomains.yaml
+#- import_playbook: roles/ovirtengine/ovirtvms.yaml
+#- import_playbook: roles/glusternodes/adjoin.yaml
+- import_playbook: roles/ovirtnodes/backup.yaml
 ...
