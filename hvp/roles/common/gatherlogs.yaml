@@ -1,24 +1,25 @@
 ---
-- name: gather diagnostic logs
+# Ansible playbook to generate and gather logs from nodes
+- name: Gather diagnostic logs
   hosts: glusternodes
   tasks:
-    - name: copy script
-      copy: 
-        src: "DebuggaNodi.sh"
-        dest: "/root/bin/DebuggaNodi.sh"
-        owner: root
-        group: root
-        mode: 0755
-    - name: generate diagnostic archives
+    - name: Generate standard sosreport
+      vars:
+        generate_sosreport: false
+      command: "sosreport --batch --tmp-dir /root/backup --name {{ inventory_hostname }}"
+      ignore_errors: yes
+      register: sosreport_result
+      when: generate_sosreport
+    - name: Generate custom storage status report
+      script: files/inspect-node-storage.sh
+    - name: Generate common HVP configuration/log archives
       shell: "{{ item }} > /dev/null 2>&1"
       ignore_errors: yes
-      register: command_result
+      register: backupcommand_result
       with_items:
-        - "/root/bin/DebuggaNodi.sh"
         - "/root/bin/backup-conf"
         - "/root/bin/backup-log"
-        - "sosreport --batch --tmp-dir /root/backup --name {{ inventory_hostname }}"
-    - name: copy diagnostic archives
+    - name: Copy diagnostic archives locally
       synchronize:
         mode: pull
         recursive: yes
