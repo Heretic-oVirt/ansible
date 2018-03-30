@@ -1,4 +1,5 @@
 ---
+# Ansible flat tasks file to be included in playbooks
 - name: Set authorized ssh key to allow ssh passwordless access
   authorized_key:
     user: root
