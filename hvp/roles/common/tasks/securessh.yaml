@@ -1,4 +1,5 @@
 ---
+# Ansible flat tasks file to be included in playbooks
 - name: Disallow ssh password-based root access
   lineinfile:
     state: present
