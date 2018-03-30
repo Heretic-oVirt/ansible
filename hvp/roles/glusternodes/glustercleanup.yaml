@@ -78,14 +78,6 @@
         enabled: False
         state: stopped
         no_block: no
-    - name: Copy the LVM cleanup helper script
-      # TODO: remove when properly implemented by means of fact finding above and gDeploy below
-      copy:
-        src: lvm-cleanup.sh
-        dest: /usr/local/sbin/lvm-cleanup.sh
-        owner: root
-        group: root
-        mode: 0755
 - name: Perform gDeploy-based Gluster unconfiguration
   hosts: localhost
   remote_user: root
@@ -112,8 +104,6 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Execute the LVM cleanup helper script
-      vars:
-        ansible_ssh_pipelining: no
-      command: /usr/local/sbin/lvm-cleanup.sh
+      script: files/lvm-cleanup.sh
       register: lvmcleanup_result
 ...
