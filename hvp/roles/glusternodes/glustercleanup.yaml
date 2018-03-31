@@ -4,12 +4,12 @@
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
-    - include: ../common/tasks/createkeys.yaml
+    - include_tasks: ../common/tasks/createkeys.yaml
 - name: Inspect Gluster nodes
   hosts: glusternodes
   remote_user: root
   tasks:
-    - include: ../common/tasks/setupkeys.yaml
+    - include_tasks: ../common/tasks/setupkeys.yaml
 # TODO: write a suitable hvp_gluster_disks fact-finding module to drive the LVM-cleanup part in gdeploy-cleanup.j2
 # Note: as a temporary workaround we use an external helper script lvm-cleanup.sh
 #    - name: Gather Gluster-used disks
