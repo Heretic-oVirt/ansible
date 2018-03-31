@@ -7,12 +7,12 @@
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
-    - include: ../common/tasks/createkeys.yaml
+    - include_tasks: ../common/tasks/createkeys.yaml
 - name: Perform oVirt DataCenter and Cluster configuration through the Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
-    - include: ../common/tasks/setupkeys.yaml
+    - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
