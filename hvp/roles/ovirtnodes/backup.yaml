@@ -1,10 +1,15 @@
 ---
 # Ansible playbook to setup a complete Bareos infrastructure (Director on Engine, nodes as storage daemons)
 # TODO: install, configure and enable/start Bareos file daemons on every guest vm
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include_tasks: ../common/tasks/createkeys.yaml
 - name: Install and configure Bareos on oVirt nodes
   hosts: ovirtnodes
   remote_user: root
   tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Install Bareos-related packages on nodes
       yum:
         name: "{{ item }}"
