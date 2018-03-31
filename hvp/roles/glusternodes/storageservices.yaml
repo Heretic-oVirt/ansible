@@ -4,12 +4,12 @@
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
-    - include: ../common/tasks/createkeys.yaml
+    - include_tasks: ../common/tasks/createkeys.yaml
 - name: Inspect Gluster nodes
   hosts: glusternodes
   remote_user: root
   tasks:
-    - include: ../common/tasks/setupkeys.yaml
+    - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars
       include_vars:
         file: "{{ item }}"
