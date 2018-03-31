@@ -5,12 +5,12 @@
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
-    - include: ../common/tasks/createkeys.yaml
+    - include_tasks: ../common/tasks/createkeys.yaml
 - name: Gather CPU type across all hosts
   hosts: ovirtnodes
   remote_user: root
   tasks:
-    - include: ../common/tasks/setupkeys.yaml
+    - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Gather CPU types
       hvp_cpu_type:
 - name: Check CPU facts cluster-wide
