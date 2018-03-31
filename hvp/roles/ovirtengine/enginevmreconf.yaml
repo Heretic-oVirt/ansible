@@ -8,6 +8,7 @@
   hosts: ovirt_master
   remote_user: root
   tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Activate global maintenance
       vars:
         ansible_ssh_pipelining: no
