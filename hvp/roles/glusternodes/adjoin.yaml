@@ -4,6 +4,26 @@
   hosts: localhost
   tasks:
     - include_tasks: ../common/tasks/createkeys.yaml
+    - name: Get common vars
+      include_vars:
+        file: "{{ item }}"
+      with_items:
+        - "../common/vars/hvp.yaml"
+        - "../common/vars/ad.yaml"
+    - name: Wait for full AD DC availability
+      # Note: we wait for DNS, RPC, LDAP and Kerberos (password change) services to be listening on a DC (identified by resolving the AD domain DNS name)
+      wait_for:
+        host: "{{ lookup('dig', hvp_adjoin_domain, wantlist=True) | first }}"
+        port: "{{ item }}"
+        state: started
+        delay: 0
+        sleep: 30
+        timeout: 300
+      with_items:
+        - 53
+        - 135
+        - 389
+        - 464
 - name: Perform Samba AD configuration
   hosts: glusternodes
   remote_user: root
