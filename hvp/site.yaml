@@ -7,7 +7,7 @@
 - import_playbook: roles/ovirtengine/ovirtnetworks.yaml
 - import_playbook: roles/glusternodes/storageservices.yaml
 - import_playbook: roles/ovirtengine/nfsdomains.yaml
-#- import_playbook: roles/ovirtengine/ovirtvms.yaml
-#- import_playbook: roles/glusternodes/adjoin.yaml
+- import_playbook: roles/ovirtengine/ovirtvms.yaml
+- import_playbook: roles/glusternodes/adjoin.yaml
 - import_playbook: roles/ovirtnodes/backup.yaml
 ...
