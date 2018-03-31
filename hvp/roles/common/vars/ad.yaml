@@ -1,5 +1,5 @@
 # AD-related variables for HVP Ansible playbooks
-
+hvp_adjoin_domain: ad.mgmt.private
 hvp_adjoin_realm: AD.MGMT.PRIVATE
 hvp_adjoin_username: adhvpadmin
 hvp_adjoin_password: HVP_dem0
