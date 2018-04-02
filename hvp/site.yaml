@@ -2,7 +2,7 @@
 # Global Ansible playbook for the whole process
 - import_playbook: roles/glusternodes/glusternodes.yaml
 - import_playbook: roles/ovirtnodes/ovirtnodes.yaml
-- import_playbook: roles/ovirtengine/clusterdcsetup.yaml
+- import_playbook: roles/ovirtengine/ovirtdatacenter.yaml
 - import_playbook: roles/ovirtengine/enginevmreconf.yaml
 - import_playbook: roles/ovirtengine/ovirtnetworks.yaml
 - import_playbook: roles/glusternodes/storageservices.yaml
