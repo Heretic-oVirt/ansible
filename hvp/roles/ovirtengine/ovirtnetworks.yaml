@@ -26,7 +26,7 @@
     - name: Enable and start OVN-related services
       systemd:
         name: "{{ item }}"
-        enabled: True
+        enabled: true
         state: started
         no_block: no
       with_items:
@@ -39,20 +39,20 @@
     - name: Allow OVN-provider communications
       firewalld:
         service: ovirt-provider-ovn
-        permanent: True
-        immediate: True
+        permanent: true
+        immediate: true
         state: enabled
     - name: Allow OVN-components communications - South
       firewalld:
         rich_rule: 'rule family="ipv4" port protocol="tcp" port="6641" accept'
-        permanent: True
-        immediate: True
+        permanent: true
+        immediate: true
         state: enabled
     - name: Allow OVN-components communications - North
       firewalld:
         rich_rule: 'rule family="ipv4" port protocol="tcp" port="6642" accept'
-        permanent: True
-        immediate: True
+        permanent: true
+        immediate: true
         state: enabled
     - name: Configure OVN central to listen on ports - South
       command: ovn-sbctl set-connection ptcp:6642
