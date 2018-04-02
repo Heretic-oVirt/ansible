@@ -120,7 +120,7 @@
     - name: Enable and start Bareos-related services on Engine
       systemd:
         name: "{{ item }}"
-        enabled: True
+        enabled: true
         state: started
         no_block: no
       with_items:
@@ -133,7 +133,7 @@
     - name: Enable and start Bareos-related services on oVirt nodes
       systemd:
         name: "{{ item }}"
-        enabled: True
+        enabled: true
         state: started
         no_block: no
       with_items:
