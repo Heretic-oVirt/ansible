@@ -402,10 +402,10 @@
       command: newaliases
       register: newaliases_result
       when: aliases_result.changed
-    - name: Enable and start HVP-recommended services
+    - name: Enable and start needed services
       systemd:
         name: "{{ item }}"
-        enabled: True
+        enabled: true
         state: started
         no_block: no
       with_items:
@@ -413,7 +413,7 @@
     - name: Disable and stop unneeded services
       systemd:
         name: "{{ item }}"
-        enabled: False
+        enabled: false
         state: stopped
         no_block: no
       with_items:
