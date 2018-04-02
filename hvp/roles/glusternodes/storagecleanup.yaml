@@ -43,7 +43,7 @@
     - name: Disable and stop the Gluster-block service
       systemd:
         name: gluster-blockd
-        enabled: False
+        enabled: false
         state: stopped
         no_block: no
       ignore_errors: yes
@@ -57,25 +57,25 @@
     - name: Disable and stop the CTDB service
       systemd:
         name: ctdb
-        enabled: False
+        enabled: false
         state: stopped
         no_block: no
     - name: Disable and stop the RT bandwidth configuration
       systemd:
         name: cgroup-rt-bandwidth
-        enabled: False
+        enabled: false
         state: stopped
         no_block: no
     - name: Disable and stop the wait service for Gluster ctdb volume
       systemd:
         name: gluster-ctdb-wait-online
-        enabled: False
+        enabled: false
         state: stopped
         no_block: no
     - name: Disable and stop the local mounting of the Gluster ctdb volume
       systemd:
         name: gluster-lock.mount
-        enabled: False
+        enabled: false
         state: stopped
         no_block: no
 - name: Perform gDeploy-based Gluster unconfiguration
