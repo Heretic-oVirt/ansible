@@ -72,7 +72,7 @@
     - name: Enable and start the Gluster-block service
       systemd:
         name: gluster-blockd
-        enabled: True
+        enabled: true
         state: started
         no_block: no
 - name: Create Gluster-block based LUNs
@@ -112,19 +112,19 @@
     - name: Enable and start the wait service for Gluster CTDB volume
       systemd:
         name: gluster-ctdb-wait-online
-        enabled: True
+        enabled: true
         state: started
         no_block: no
     - name: Enable and start the local mounting of the Gluster CTDB volume
       systemd:
         name: gluster-lock.mount
-        enabled: True
+        enabled: true
         state: started
         no_block: no
     - name: Enable and start the RT bandwidth configuration
       systemd:
         name: cgroup-rt-bandwidth
-        enabled: True
+        enabled: true
         state: started
         no_block: no
     - name: Prepare Samba Workgroup configuration file
@@ -137,7 +137,7 @@
     - name: Enable and start the CTDB service
       systemd:
         name: ctdb
-        enabled: True
+        enabled: true
         state: started
         no_block: no
 - name: Configure Samba authentication
