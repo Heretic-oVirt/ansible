@@ -129,6 +129,8 @@
         - pdsh-rcmd-ssh
         - NetworkManager-glib
         - nm-connection-editor
+        - libselinux-python
+        - libsemanage-python
         - virtio-win
     - name: Install Bareos-related packages
       yum:
