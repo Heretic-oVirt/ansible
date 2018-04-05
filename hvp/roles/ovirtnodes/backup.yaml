@@ -5,11 +5,23 @@
   hosts: localhost
   tasks:
     - include_tasks: ../common/tasks/createkeys.yaml
+    - name: Get common vars
+      include_vars:
+        file: "{{ item }}"
+      with_items:
+        - "../common/vars/hvp.yaml"
+        - "../common/vars/ad.yaml"
 - name: Install and configure Bareos on oVirt nodes
   hosts: ovirtnodes
   remote_user: root
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars
+      include_vars:
+        file: "{{ item }}"
+      with_items:
+        - "../common/vars/hvp.yaml"
+        - "../common/vars/ad.yaml"
     - name: Install Bareos-related packages on nodes
       yum:
         name: "{{ item }}"
@@ -93,6 +105,13 @@
   hosts: ovirtengine
   remote_user: root
   tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars
+      include_vars:
+        file: "{{ item }}"
+      with_items:
+        - "../common/vars/hvp.yaml"
+        - "../common/vars/ad.yaml"
     - name: Install Bareos-related packages on Engine
       yum:
         name: "{{ item }}"
@@ -236,7 +255,7 @@
         - bareos-dir
         - bareos-fd
 - name: Start Bareos on oVirt nodes
-  hosts: glusternodes
+  hosts: ovirtnodes
   remote_user: root
   tasks:
     - name: Enable and start Bareos-related services on oVirt nodes
