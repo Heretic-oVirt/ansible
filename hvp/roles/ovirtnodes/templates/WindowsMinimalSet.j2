@@ -1,0 +1,30 @@
+# A Bareos FileSet to backup only configuration and data from a Windows machine
+# Note: It is assumed that a ClientRunBeforeJob script will dump client-specific data into /Backup
+FileSet {
+  Name = "WindowsMinimalSet"
+  Enable VSS = yes
+  Include {
+    Options {
+      Signature = MD5
+      Compression = lz4
+      Shadowing = globalremove
+      Drive Type = fixed
+      IgnoreCase = yes
+      WildFile = "[A-Z]:/pagefile.sys"
+      WildFile = "[A-Z]:/hiberfil.sys"
+      WildDir = "[A-Z]:/boot"
+      WildDir = "[A-Z]:/Config.Msi"
+      WildDir = "[A-Z]:/Recovery"
+      WildDir = "[A-Z]:/RECYCLER"
+      WildDir = "[A-Z]:/$RECYCLE.BIN"
+      WildDir = "[A-Z]:/System Volume Information"
+      WildDir = "[A-Z]:/SYSTEM.SAV"
+      WildDir = "[A-Z]:/Users/Administrator*"
+      WildDir = "[A-Z]:/Users/{{ hvp_adjoin_username }}*"
+      Exclude = yes
+    }
+    WildDir = "[A-Z]:/Users"
+    WildDir = "[A-Z]:/ProgramData"
+    WildDir = "[A-Z]:/Backup"
+  }
+}
