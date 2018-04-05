@@ -32,7 +32,7 @@
         vm_kickstart_file: hvp-dc-c7.ks
       template:
         src: templates/pxelinux-vm-cfg.j2
-        dest: "/var/lib/tftpboot/pxelinux.cfg/{{ vmmac_result.stdout | regex_replace(':', '-') }}"
+        dest: "/var/lib/tftpboot/pxelinux.cfg/01-{{ vmmac_result.stdout | regex_replace(':', '-') }}"
         owner: root
         group: root
         mode: 0644
