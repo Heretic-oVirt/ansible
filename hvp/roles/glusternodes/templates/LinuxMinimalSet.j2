@@ -19,7 +19,15 @@ FileSet {
       FS Type = jfs
       FS Type = zfs
     }
-    File = /boot/grub2
+    Options {
+      RegexFile = "^/boot/grub.*/.*[.]cfg$"
+    }
+    Options {
+      Exclude = yes
+      RegexDir = "^/boot/[^/]+$"
+      WildFile = "/boot/*"
+    }
+    File = /boot
     File = /etc
     File = /root
     File = /home
