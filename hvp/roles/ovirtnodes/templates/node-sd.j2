@@ -1,0 +1,8 @@
+# Configuratioon file for Bareos storage daemon on each oVirt node
+Storage {
+  Name = {{ hostvars[item]['ansible_hostname'] }}GlusterFile
+  Address = {{ hostvars[item]['inventory_hostname'] }}                # N.B. Use a fully qualified name here (do not use "localhost" here).
+  Password = "{{ hostvars[item]['bareos_sd_dir_password'] }}"
+  Device = {{ hostvars[item]['ansible_hostname'] }}GlusterStorage
+  Media Type = GlusterFile
+}
