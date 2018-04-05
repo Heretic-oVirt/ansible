@@ -4,11 +4,11 @@ FileSet {
   Name = "LinuxMinimalSet"
   Include {
     Options {
-      signature = MD5
-      compression = lz4
-      aclsupport = yes
-      xattrsupport = yes
-      shadowing = globalremove
+      Signature = MD5
+      Compression = lz4
+      ACLSupport = yes
+      XAttrSupport = yes
+      Shadowing = globalremove
       One FS = No     # change into other filesytems
       FS Type = ext2  # filesystems of given types will be backed up
       FS Type = ext3  # others will be ignored
