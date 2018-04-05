@@ -1,0 +1,62 @@
+# A Bareos FileSet to backup only configuration and data from a Linux server
+# Note: It is assumed that a ClientRunBeforeJob script will dump server-specific data into /var/local/backup
+FileSet {
+  Name = "LinuxMinimalSet"
+  Include {
+    Options {
+      signature = MD5
+      compression = lz4
+      aclsupport = yes
+      xattrsupport = yes
+      shadowing = globalremove
+      One FS = No     # change into other filesytems
+      FS Type = ext2  # filesystems of given types will be backed up
+      FS Type = ext3  # others will be ignored
+      FS Type = ext4
+      FS Type = xfs
+      FS Type = btrfs
+      FS Type = reiserfs
+      FS Type = jfs
+      FS Type = zfs
+    }
+    File = /boot/grub2
+    File = /etc
+    File = /root
+    File = /home
+    File = /var/log
+    File = /usr/local
+    File = /var/local/backup
+    File = /var/lib/tftpboot
+    File = /var/www
+  }
+  # Things that usually have to be excluded
+  # You have to exclude /var/lib/bareos/storage
+  # on your bareos server
+  Exclude {
+    File = /var/lib/bareos
+    File = /var/lib/bareos/storage
+    File = /proc
+    File = /sys
+    File = /selinux
+    File = /cgroup
+    File = /dev
+    File = /tmp
+    File = /var/tmp
+    File = /.journal
+    File = /.fsck
+    File = /.autofsck
+    File = /.autorelabel
+    File = /.nolvm
+    File = /.unconfigured
+    File = /fastboot
+    File = /fsckoptions
+    File = /forcefsck
+    File = /forcequotacheck
+    File = /halt
+    File = /poweroff
+    File = /.suspended
+    File = /root/tmp
+    File = /root/backup
+    File = /home/{{ hvp_admin_username }}
+  }
+}
