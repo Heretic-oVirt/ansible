@@ -1,3 +1,4 @@
+# Configuration file for Bareos file daemon on each oVirt node
 Client {
   Name = {{ hostvars[item]['ansible_hostname'] }}-fd
   Description = "Client resource of oVirt node {{ item }}."
