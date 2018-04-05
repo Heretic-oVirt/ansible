@@ -36,6 +36,9 @@
       copy:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
+        group: bareos
+        owner: bareos
+        mode: 0640
         remote_src: yes
       with_items:
         - { src: "/etc/bareos/bareos-dir.d/storage/Gluster.conf.example", dest: "/etc/bareos/bareos-dir.d/storage/Gluster.conf" }
@@ -58,8 +61,11 @@
         - { path: "/etc/bareos/bareos-sd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_mon_password'] }}\"" }
         - { path: "/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_mon_password'] }}\"" }
         - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: "\1Device Options = \"uri=gluster://{{ ansible_hostname }}.{{ hvp_gluster_domainname }}/{{ hvp_backup_volume_name }}/bareos\"" }
+        - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = {{ ansible_hostname }}GlusterStorage" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_sd_dir_password'] }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Address", line: "\1Address = \"{{ inventory_hostname }}\"" }
+        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = \"{{ ansible_hostname }}GlusterFile\"" }
+        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Device", line: "\1Device = \"{{ ansible_hostname }}GlusterStorage\"" }
 - name: Prepare Gluster-volume based dirs for Backup
   hosts: ovirt_master
   remote_user: root
@@ -125,14 +131,13 @@
         bareos_webui_admin_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits encrypt=no') }}"
     - name: Set parameters in configuration files on Engine
       # TODO: find if/where to set the director monitoring password
-      # TODO: configure filesets (add minimal data-only filesets for Linux and Windows to exclude OS and apps)
       # TODO: configure jobdefs (add templates for jobs below)
-      # TODO: configure jobs (add one backup job for each client - add restore jobs)
+      # TODO: configure jobs (add one backup job for each node - add one backup job for each Gluster share volume - add restore jobs)
       # TODO: customize recipients in messages (use monitoring address)
       # TODO: customize pools (change retention times)
-      # TODO: customize profiles (add other roles besides operator)
-      # TODO: customize schedules (add MonthlyCycle)
-      # TODO: customize storages (add Gluster - manage failover/balancing somehow ; add external USB/eSATA media - manage detection)
+      # TODO: customize profiles (add other roles besides operator?)
+      # TODO: customize schedules (add MonthlyCycle?)
+      # TODO: customize storages (manage failover/balancing of Gluster storage between nodes somehow ; add external USB/eSATA media - manage detection)
       lineninfile:
         state: present
         path: "{{ item.path }}"
@@ -158,10 +163,48 @@
         group: bareos
         mode: 0640
       with_items: "{{ groups['ovirtnodes'] }}"
+    - name: Create a storage configuration file for each oVirt node on Engine
+      template:
+        src: templates/node-sd.j2
+        dest: "/etc/bareos/bareos-dir.d/storage/{{ hostvars[item]['ansible_hostname'] }}-sd.conf"
+        owner: bareos
+        group: bareos
+        mode: 0640
+      with_items: "{{ groups['ovirtnodes'] }}"
+    - name: Disable default storage configuration file on Engine
+      lineinfile:
+        state: present
+        path: "/etc/bareos/bareos-dir.d/storage/File.conf"
+        backrefs: yes
+        regexp: "^([^#]+.*)$"
+        line: "#\1"
+    - name: Copy custom Bareos configuration files on Engine
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        group: bareos
+        owner: bareos
+        mode: 0640
+      with_items:
+        - { src: "files/NoneClient.conf", dest: "/etc/bareos/bareos-dir.d/client/None.conf" }
+        - { src: "files/NoneSet.conf", dest: "/etc/bareos/bareos-dir.d/fileset/None.conf" }
+    - name: Create custom fileset configuration files on Engine
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: bareos
+        group: bareos
+        mode: 0640
+      with_items:
+        - { src: "templates/LinuxMinimalSet.j2", dest: "/etc/bareos/bareos-dir.d/fileset/LinuxMinimalSet.conf" }
+        - { src: "templates/WindowsMinimalSet.j2", dest: "/etc/bareos/bareos-dir.d/fileset/WindowsMinimalSet.conf" }
     - name: Copy the WebUI admin configuration template file on Engine
       copy:
         src: "/etc/bareos/bareos-dir.d/console/admin.conf.example"
         dest: "/etc/bareos/bareos-dir.d/console/admin.conf"
+        group: bareos
+        owner: bareos
+        mode: 0640
         remote_src: yes
     - name: Set password in WebUI admin configuration file on Engine
       lineinfile:
