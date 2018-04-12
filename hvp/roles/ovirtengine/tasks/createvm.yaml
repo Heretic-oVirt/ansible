@@ -59,4 +59,4 @@
     cluster: "{{ cluster_name }}"
     name: "{{ outer_item.vm_name }}"
     wait: true
-# TODO: decide whether to wait for a specific outer_item.vm_service_port
+# TODO: wait for a specific outer_item.vm_service_port and remove/lower external loop pause
