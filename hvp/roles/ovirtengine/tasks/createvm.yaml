@@ -1,3 +1,4 @@
+# Ansible tasks file to create a single oVirt VM inside a loop (with all parameters passed as outer_item elements)
 - name: Generate random MAC address for oVirt VM
   shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
   register: vmmac_result
