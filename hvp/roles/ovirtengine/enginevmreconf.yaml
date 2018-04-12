@@ -141,7 +141,7 @@
         - bareos-client
         - bareos-director
         - bareos-database-postgresql
-        - bareos-databse-tools
+        - bareos-database-tools
         - bareos-webui
     - name: Cleanup rpm leftovers
       command: "{{ item }}"
