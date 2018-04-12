@@ -1,7 +1,7 @@
-- name: Generate random MAC address for oVirt vm
+- name: Generate random MAC address for oVirt VM
   shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
   register: vmmac_result
-- name: Create PXELinux configuration for oVirt vm
+- name: Create PXELinux configuration for oVirt VM
   template:
     src: templates/pxelinux-vm-cfg.j2
     dest: "/var/lib/tftpboot/pxelinux.cfg/01-{{ vmmac_result.stdout | regex_replace(':', '-') }}"
@@ -9,53 +9,53 @@
     group: root
     mode: 0644
   delegate_to: localhost
-- name: Create oVirt vm
+- name: Create oVirt VM
   ovirt_vms:
     auth: "{{ ovirt_auth }}"
     state: present
     cluster: "{{ cluster_name }}"
     storage_domain: "{{ vmstore_sd_name }}"
-    name: "{{ item.vm_name }}"
-    comment: "{{ item.vm_comment }}"
-    delete_protected: "{{ item.vm_delete_protected }}"
-    high_availability: "{{ item.vm_high_availability }}"
-    memory: "{{ item.vm_memory }}"
-    cpu_cores: "{{ item.vm_cpu_cores }}"
+    name: "{{ outer_item.vm_name }}"
+    comment: "{{ outer_item.vm_comment }}"
+    delete_protected: "{{ outer_item.vm_delete_protected }}"
+    high_availability: "{{ outer_item.vm_high_availability }}"
+    memory: "{{ outer_item.vm_memory }}"
+    cpu_cores: "{{ outer_item.vm_cpu_cores }}"
     cpu_sockets: "{{ iten.vm_cpu_sockets }}"
-    cpu_shares: "{{ item.vm_cpu_shares }}"
-    type: "{{ item.vm_type }}"
-    operating_system: "{{ item.vm_operating_system }}"
+    cpu_shares: "{{ outer_item.vm_cpu_shares }}"
+    type: "{{ outer_item.vm_type }}"
+    operating_system: "{{ outer_item.vm_operating_system }}"
     boot_devices:
       - hd
       - network
     wait: true
-- name: Create oVirt vm disk
+- name: Create oVirt VM disk
   ovirt_disks:
     auth: "{{ ovirt_auth }}"
     state: attached
-    name: "{{ item.vm_name }}_disk"
-    vm_name: "{{ item.vm_name }}"
+    name: "{{ outer_item.vm_name }}_disk"
+    vm_name: "{{ outer_item.vm_name }}"
     interface: virtio
     format: cow
     storage_domain: "{{ vmstore_sd_name }}"
-    size: "{{ item.vm_disk_size }}"
+    size: "{{ outer_item.vm_disk_size }}"
     bootable: true
     wait: true
-- name: Create oVirt vm nic
+- name: Create oVirt VM nic
   ovirt_nics:
     auth: "{{ ovirt_auth }}"
     state: plugged
-    name: "{{ item.vm_name }}_nic"
-    vm_name: "{{ item.vm_name }}"
+    name: "{{ outer_item.vm_name }}_nic"
+    vm_name: "{{ outer_item.vm_name }}"
     interface: virtio
     mac_address: "{{ vmmac_result.stdout }}"
-    network: "{{ item.vm_network }}"
+    network: "{{ outer_item.vm_network }}"
     wait: true
-- name: Start oVirt vm
+- name: Start oVirt VM
   ovirt_vms:
     auth: "{{ ovirt_auth }}"
     state: running
     cluster: "{{ cluster_name }}"
-    name: "{{ item.vm_name }}"
+    name: "{{ outer_item.vm_name }}"
     wait: true
-# TODO: decide whether to wait for a specific item.vm_service_port
+# TODO: decide whether to wait for a specific outer_item.vm_service_port
