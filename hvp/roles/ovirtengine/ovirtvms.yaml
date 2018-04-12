@@ -3,7 +3,7 @@
 # Note: Thanks to Simone Tiraboschi for initial Ansible oVirt management hints
 # TODO: find a way to extract minimum desired parameters from local Kickstart file and use those for vm creation in loop
 # TODO: find a way to create a vm from scratch (including disks and nics) and make it boot once from network with Kickstart installation (on-the-fly configure PXELinux on installer machine using pre-defined MAC address)
-# TODO: remove all PXELinux cutom menus (/var/lib/tftpboot/pxelinux.cfg/01-*) at the end
+# TODO: remove all PXELinux custom menu files (/var/lib/tftpboot/pxelinux.cfg/01-*) at the end
 - name: Generate SSH key if not present
   hosts: localhost
   tasks:
@@ -25,68 +25,14 @@
         username: "{{ username }}"
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
-    - name: Generate random MAC address for oVirt vm
-      shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
-      register: vmmac_result
-    - name: Create PXELinux configuration for oVirt vm
-      vars:
-        vm_kickstart_file: hvp-dc-c7.ks
-      template:
-        src: templates/pxelinux-vm-cfg.j2
-        dest: "/var/lib/tftpboot/pxelinux.cfg/01-{{ vmmac_result.stdout | regex_replace(':', '-') }}"
-        owner: root
-        group: root
-        mode: 0644
-      delegate_to: localhost
-    - name: Create oVirt vm
-      ovirt_vms:
-        auth: "{{ ovirt_auth }}"
-        state: present
-        cluster: "{{ cluster_name }}"
-        storage_domain: "{{ vmstore_sd_name }}"
-        name: myvm
-        comment: My test VM
-        delete_protected: yes
-        high_availability: false
-        memory: 2GiB
-        cpu_cores: 1
-        cpu_sockets: 1
-        cpu_shares: 1024
-        type: server
-        operating_system: rhel_7x64
-        boot_devices:
-          - hd
-          - network
-        wait: true
-    - name: Create oVirt vm disk
-      ovirt_disks:
-        auth: "{{ ovirt_auth }}"
-        state: attached
-        name: myvm_disk
-        vm_name: myvm
-        interface: virtio
-        format: cow
-        storage_domain: "{{ vmstore_sd_name }}"
-        size: 120GiB
-        bootable: true
-        wait: true
-    - name: Create oVirt vm nic
-      ovirt_nics:
-        auth: "{{ ovirt_auth }}"
-        state: plugged
-        name: myvm_nic
-        vm_name: myvm
-        interface: virtio
-        mac_address: "{{ vmmac_result.stdout }}"
-        network: "{{ hvp_mgmt_bridge_name }}"
-        wait: true
-    - name: Start oVirt vm
-      ovirt_vms:
-        auth: "{{ ovirt_auth }}"
-        state: running
-        cluster: "{{ cluster_name }}"
-        name: myvm
-        wait: true
+    - name: Create all guest VMs
+      include_tasks: tasks/createvm.yaml
+      loop:
+        - { vm_kickstart_file: "hvp-dc-c7.ks", vm_name: "domaincontroller", vm_comment: "Active Directory Domain controller", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 120GiB, vm_network: {{ hvp_mgmt_bridge_name }} }
+      loop_control:
+        loop_var: outer_item
+        label: "{{ outer_item.vm_name }}"
+        pause: 300
     - name: Revoke the SSO token
       no_log: true
       ovirt_auth:
