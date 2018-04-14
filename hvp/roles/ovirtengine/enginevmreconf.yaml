@@ -164,6 +164,11 @@
           prefix="$(hostname)-$(date '+%Y-%m-%d_%H-%M-%S')"
           content="ovirt-engine-backup"
           engine-backup --file=/var/local/backup/${prefix}-${content}.tar.gz --mode=backup --log=/var/local/backup/${prefix}-${content}.log
+          res=$?
+          if [ ${res} -ne 0 ]; then
+            # In case of errors, do not remove anything and return error code upstream
+            exit ${res}
+          fi
           # Keep only the last two dumps and logs
           find /var/local/backup -type f -printf '%T@\t%p\0' | sort -z -nrk1 | tail -z -n +5 | cut -z -f2- | xargs -0 rm -f --
         dest: /usr/local/sbin/dump2backup
