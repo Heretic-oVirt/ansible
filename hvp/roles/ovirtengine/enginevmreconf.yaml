@@ -149,6 +149,28 @@
       with_items:
         - "find /etc -type f -name '*.rpmnew' -exec rename .rpmnew '' '{}' ';'"
         - "find /etc -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
+    - name: Create HVP standard directory for machine-specific application dumps
+      file:
+        path: /var/local/backup
+        state: directory
+        owner: root
+        group: root
+        mode: 0750
+    - name: Create HVP standard script for machine-specific application dumps
+      copy:
+        content: |
+          #!/bin/bash
+          # Create oVirt Engine dump to be picked up by standard filesystem backup
+          prefix="$(hostname)-$(date '+%Y-%m-%d_%H-%M-%S')"
+          content="ovirt-engine-backup"
+          engine-backup --file=/var/local/backup/${prefix}-${content}.tar.gz --mode=backup --log=/var/local/backup/${prefix}-${content}.log
+          # Keep only the last two dumps and logs
+          find /var/local/backup -type f -printf '%T@\t%p\0' | sort -z -nrk1 | tail -z -n +5 | cut -z -f2- | xargs -0 rm -f --
+        dest: /usr/local/sbin/dump2backup
+        owner: root
+        group: root
+        mode: 0750
+        backup: no
     - name: Configure YUM-cron
       shell: "sed -i -e 's/^update_messages\\s.*$/update_messages = no/' -e 's/^download_updates\\s.*$/download_updates = no/' -e 's/^apply_updates\\s.*$/apply_updates = no/' -e 's/^emit_via\\s.*$/emit_via = None/' /etc/yum/yum-cron*.conf"
       register: confyumcron_result
