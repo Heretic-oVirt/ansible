@@ -67,11 +67,11 @@ hvp_backup_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1536k"
 
 # HVP Gluster-block settings
-# TODO: derive proper values for Gluster-block LUN sizes from user settings and/or available space
-hvp_lun_sizes:
-  - 200GiB
-  - 300GiB
-  - 450GiB
+# TODO: disabled since Gluster-block LUNs creation is not working yet
+hvp_lun_sizes: []
+#  - 200GiB
+#  - 300GiB
+#  - 450GiB
 
 # Engine credentials:
 url: "https://{{ hvp_engine_name }}.{{ hvp_engine_domainname }}/ovirt-engine/api"
