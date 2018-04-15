@@ -72,7 +72,7 @@
     vm_name: "{{ outer_item.vm_name }}"
     interface: virtio
     mac_address: "{{ vmmac_result.stdout }}"
-    network: "{{ outer_item.vm_network }}"
+    network: "{{ outer_item.vm_network_name }}"
     wait: true
 - name: Start oVirt VM
   ovirt_vms:
