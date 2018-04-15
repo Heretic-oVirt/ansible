@@ -120,6 +120,8 @@ engine_sd_path: "/{{ hvp_enginedomain_volume_name }}"
 engine_sd_mountopts: "{{ glusterfs_mountopts }}"
 
 ## Networking
+hvp_static_address_block_start: 70
+
 got_mgmt_network: true
 mgmt_network: 172.20.10.0/24
 hvp_mgmt_bridge_name: ovirtmgmt
