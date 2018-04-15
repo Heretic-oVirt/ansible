@@ -69,7 +69,7 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Configure OVN VIF driver
-      command: vdsm-tool ovn-config "{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}" "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      command: "vdsm-tool ovn-config {{ hostvars[groups['ovirtengine'] | first]['ansible_default_ipv4']['address'] }} {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       register: vifconf_result
 - name: Perform OVN networks creation on oVirt Engine
   hosts: ovirtengine
@@ -83,6 +83,9 @@
   hosts: ovirtnodes
   remote_user: root
   tasks:
+    - name: Get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
     - name: Define Gluster network interface
       set_fact:
         gluster_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(gluster_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
@@ -91,7 +94,7 @@
       set_fact:
         lan_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(lan_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_lan_network
-    - name: define Internal network interface
+    - name: Define Internal network interface
       set_fact:
         internal_eth: "{% for eth in hostvars[inventory_hostname]['ansible_interfaces'] %}{% if 'ipv4' in hostvars[inventory_hostname]['ansible_' + eth] %}{% if hostvars[inventory_hostname]['ansible_' + eth]['ipv4']['address'] | ipaddr(internal_network) | ipaddr('bool') %}{{ eth }}{% endif %}{% endif %}{% endfor %}"
       when: got_internal_network
@@ -108,7 +111,7 @@
       with_items: "{{ groups['ovirtnodes'] }}"
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
-    - name: get common vars
+    - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Obtain oVirt Engine SSO token
@@ -128,7 +131,7 @@
         network_type: external
         state: present
         read_only: false
-        url: "http://{{ hostvars[groups['ovirtengine'][0]]['ansible_default_ipv4']['address'] }}:9696"
+        url: "http://{{ hostvars[groups['ovirtengine'] | first]['ansible_default_ipv4']['address'] }}:9696"
         wait: true
     - name: Qualify Management network when it is the only one
       ovirt_networks:
