@@ -160,7 +160,11 @@
         interface: "{{ hostvars[item]['gluster_eth'] }}"
         state: present
         networks:
-          - { name: 'gluster', boot_protocol: 'static', address: "{{ hostvars[item]['ansible_' + hostvars[item]['gluster_eth']]['ipv4'] | ipaddr('address') }}", prefix: "{{ hostvars[item]['ansible_' + hostvars[item]['gluster_eth']]['ipv4'] | ipaddr('prefix') }}" }
+          - name: gluster
+            boot_protocol: static
+            address: "{{ hostvars[item]['ansible_' + hostvars[item]['gluster_eth']]['ipv4'] | ipaddr('address') }}"
+            prefix: "{{ hostvars[item]['ansible_' + hostvars[item]['gluster_eth']]['ipv4'] | ipaddr('prefix') }}"
+            version: v4
         check: true
         wait: true
       when: got_gluster_network
@@ -195,7 +199,11 @@
         interface: "{{ hostvars[item]['lan_eth'] }}"
         state: present
         networks:
-          - { name: 'lan', boot_protocol: 'static', address: "{{ hostvars[item]['ansible_' + hostvars[item]['lan_eth']]['ipv4'] | ipaddr('address') }}", prefix: "{{ hostvars[item]['ansible_' + hostvars[item]['lan_eth']]['ipv4'] | ipaddr('prefix') }}" }
+          - name: lan
+            boot_protocol: static
+            address: "{{ hostvars[item]['ansible_' + hostvars[item]['lan_eth']]['ipv4'] | ipaddr('address') }}"
+            prefix: "{{ hostvars[item]['ansible_' + hostvars[item]['lan_eth']]['ipv4'] | ipaddr('prefix') }}"
+            version: v4
         check: true
         wait: true
       when: got_lan_network
@@ -219,7 +227,11 @@
         interface: "{{ hostvars[item]['internal_eth'] }}"
         state: present
         networks:
-          - { name: 'internal', boot_protocol: 'static', address: "{{ hostvars[item]['ansible_' + hostvars[item]['internal_eth']]['ipv4'] | ipaddr('address') }}", prefix: "{{ hostvars[item]['ansible_' + hostvars[item]['internal_eth']]['ipv4'] | ipaddr('prefix') }}" }
+          - name: internal
+            boot_protocol: static
+            address: "{{ hostvars[item]['ansible_' + hostvars[item]['internal_eth']]['ipv4'] | ipaddr('address') }}"
+            prefix: "{{ hostvars[item]['ansible_' + hostvars[item]['internal_eth']]['ipv4'] | ipaddr('prefix') }}"
+            version: v4
         check: true
         wait: true
       when: got_internal_network
