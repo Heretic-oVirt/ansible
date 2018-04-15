@@ -1,7 +1,7 @@
 # Global variables for HVP Ansible playbooks
 # Note: this file will be overridden by install-time autodetection logic
 
-# HVP local conventions
+## HVP local conventions
 hvp_management_domainname: mgmt.private
 hvp_gluster_domainname: gluster.private
 hvp_storage_name: discord
@@ -24,7 +24,6 @@ hvp_switch_ip: "{% if hostvars[hvp_master_node]['ansible_virtualization_role'] =
 # Note: generally, we keep a distinct proper gateway address on the management network only for network routing configuration
 hvp_gateway_ip: 172.20.10.1
 hvp_timezone: UTC
-hvp_mgmt_bridge_name: ovirtmgmt
 hvp_firewall_manager: "firewalld"
 hvp_spice_pki_subject: "C=EN, L=Test, O=Test, CN=Test"
 hvp_pki_subject: "/C=EN/L=Test/O=Test/CN=Test"
@@ -38,7 +37,7 @@ hvp_ovn_private_network_names:
   - dmz0
   - dmz1
 
-# HVP Gluster settings
+## HVP Gluster settings
 # TODO: derive proper values for Gluster volume sizes from user settings and/or available space
 # TODO: dynamically determine arbiter sizes for each Gluster volume
 hvp_enginedomain_volume_name: engine
@@ -66,20 +65,20 @@ hvp_backup_size: "1024GB"
 hvp_backup_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1536k"
 
-# HVP Gluster-block settings
+## HVP Gluster-block settings
 # TODO: disabled since Gluster-block LUNs creation is not working yet
 hvp_lun_sizes: []
 #  - 200GiB
 #  - 300GiB
 #  - 450GiB
 
-# Engine credentials:
+## Engine credentials:
 url: "https://{{ hvp_engine_name }}.{{ hvp_engine_domainname }}/ovirt-engine/api"
 username: admin@internal
 password: HVP_dem0
 ca_file: /etc/pki/ovirt-engine/ca.pem
 
-# Hosts credentials:
+## Hosts credentials:
 # Note: the user must manually confirm BMC settings by editing here
 host_password: HVP_dem0
 #host_bmc_type: ipmilan
@@ -121,6 +120,10 @@ engine_sd_path: "/{{ hvp_enginedomain_volume_name }}"
 engine_sd_mountopts: "{{ glusterfs_mountopts }}"
 
 ## Networking
+got_mgmt_network: true
+mgmt_network: 172.20.10.0/24
+hvp_mgmt_bridge_name: ovirtmgmt
+
 got_gluster_network: true
 gluster_network: 172.20.11.0/24
 
