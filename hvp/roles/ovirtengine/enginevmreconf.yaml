@@ -371,7 +371,7 @@
       command: udevadm trigger --attr-match=subsystem=block
       register: udevblocktrigger_result
       when: qemudev_result.changed or virtiodev_result.changed
-    - name: set virtual-guest-specific kernel parameters
+    - name: Set virtual-guest-specific kernel parameters
       sysctl:
         sysctl_file: "{{ item.pfrag }}"
         state: present
