@@ -17,7 +17,7 @@
   hosts: localhost
   tasks:
     - name: Make sure that the CPU vendor is homogeneous
-      assert: { that: "hostvars['{{ item }}']['hvp_cpu_type']['vendor'] == hostvars[groups['ovirt_master'][0]]['hvp_cpu_type']['vendor']", msg: "CPU vendor must be the same across all hosts" }
+      assert: { that: "hostvars['{{ item }}']['hvp_cpu_type']['vendor'] == hostvars[groups['ovirt_master'] | first]['hvp_cpu_type']['vendor']", msg: "CPU vendor must be the same across all hosts" }
       with_items: "{{ groups['ovirt_nonmaster_nodes'] }}"
     - name: Define common CPU index
       set_fact:
