@@ -27,18 +27,20 @@
         ca_file: "{{ ca_file }}"
     - name: Set Management as default VMs network
       set_vars:
-        vms_network: "{{ hvp_mgmt_bridge_name }}"
+        vms_network_name: "{{ hvp_mgmt_bridge_name }}"
+        vms_network: "{{ mgmt_network }}"
     - name: Set VMs network in presence of LAN dedicated connection
       set_vars:
-        vms_network: "{{ hvp_lan_bridge_name }}"
+        vms_network_name: "{{ hvp_lan_bridge_name }}"
+        vms_network: "{{ lan_network }}"
       when: got_lan_network
     - name: Create all guest VMs
       include_tasks: tasks/createvm.yaml
       loop:
-        - { vm_kickstart_file: "hvp-dc-c7.ks", vm_name: "domaincontroller", vm_comment: "Active Directory Domain Controller", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 60GiB, vm_network: {{ vms_network }} }
-        - { vm_kickstart_file: "hvp-db-c7.ks", vm_name: "database", vm_comment: "Database Server", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 4GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 120GiB, vm_network: {{ vms_network }} }
-        - { vm_kickstart_file: "hvp-pr-c7.ks", vm_name: "printer", vm_comment: "Print Server", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 80GiB, vm_network: {{ vms_network }} }
-        - { vm_kickstart_file: "hvp-vd-c7.ks", vm_name: "terminal", vm_comment: "Remote Desktop Server", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 8GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 120GiB, vm_network: {{ vms_network }} }
+        - { vm_kickstart_file: "hvp-dc-c7.ks", vm_name: "domaincontroller", vm_comment: "Active Directory Domain Controller", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 60GiB, vm_network_name: {{ vms_network_name }}, vm_boot_ip_address: {{ vms_network | ipaddr(hvp_static_address_block_start + 1) | ipaddr('address') }} }
+        - { vm_kickstart_file: "hvp-db-c7.ks", vm_name: "database", vm_comment: "Database Server", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 4GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 120GiB, vm_network_name: {{ vms_network_name }}, vm_boot_ip_address: {{ vms_network | ipaddr(hvp_static_address_block_start + 2) | ipaddr('address') }} }
+        - { vm_kickstart_file: "hvp-pr-c7.ks", vm_name: "printer", vm_comment: "Print Server", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 80GiB, vm_network_name: {{ vms_network_name }}, vm_boot_ip_address: {{ vms_network | ipaddr(hvp_static_address_block_start + 3) | ipaddr('address') }} }
+        - { vm_kickstart_file: "hvp-vd-c7.ks", vm_name: "terminal", vm_comment: "Remote Desktop Server", vm_delete_protected: yes, vm_high_availability: false, vm_memory: 8GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: "server", vm_operating_system: "rhel_7x64", vm_disk_size: 120GiB, vm_network_name: {{ vms_network_name }}, vm_boot_ip_address: {{ vms_network | ipaddr(hvp_static_address_block_start + 4) | ipaddr('address') }} }
       loop_control:
         loop_var: outer_item
         label: "{{ outer_item.vm_name }}"
