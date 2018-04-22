@@ -23,6 +23,8 @@ hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
 hvp_switch_ip: "{% if hostvars[hvp_master_node]['ansible_virtualization_role'] == 'guest' %} 172.20.10.1 {% else %} 172.20.10.200 {% endif %}"
 # Note: generally, we keep a distinct proper gateway address on the management network only for network routing configuration
 hvp_gateway_ip: 172.20.10.1
+hvp_metrics_name: luna
+hvp_metrics_domainname: "{{ hvp_management_domainname }}"
 hvp_timezone: UTC
 hvp_firewall_manager: "firewalld"
 hvp_spice_pki_subject: "C=EN, L=Test, O=Test, CN=Test"
