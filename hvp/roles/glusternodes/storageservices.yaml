@@ -60,6 +60,7 @@
         - { path: '/mnt/homes', owner: 'root', group: 'root', mode: '0751' }
         - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
         - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
+        - { path: '/mnt/data', owner: 'root', group: 'root', mode: '0755' }
       when: unixsharemount_result.rc == 0
     - name: Unmount the Gluster volume intended for NFS sharing
       command: "umount -l /mnt"
