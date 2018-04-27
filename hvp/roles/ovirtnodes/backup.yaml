@@ -22,16 +22,18 @@
       with_items:
         - "../common/vars/hvp.yaml"
         - "../common/vars/ad.yaml"
+    - name: List Bareos-related packages on nodes
+      set_vars:
+        hvp_bareos_node_packages:
+          - bareos-tools
+          - bareos-client
+          - bareos-filedaemon-glusterfs-plugin
+          - bareos-storage
+          - bareos-storage-glusterfs
     - name: Install Bareos-related packages on nodes
       yum:
-        name: "{{ item }}"
+        name: "{{ hvp_bareos_node_packages }}"
         state: latest
-      with_items:
-        - bareos-tools
-        - bareos-client
-        - bareos-filedaemon-glusterfs-plugin
-        - bareos-storage
-        - bareos-storage-glusterfs
     - name: Cleanup Bareos rpm leftovers on nodes
       command: "{{ item }}"
       register: cleanupnodesbareosinstleftovers_result
@@ -112,17 +114,19 @@
       with_items:
         - "../common/vars/hvp.yaml"
         - "../common/vars/ad.yaml"
+    - name: List Bareos-related packages on Engine
+      set_vars:
+        hvp_bareos_engine_packages:
+          - bareos-tools
+          - bareos-client
+          - bareos-director
+          - bareos-database-postgresql
+          - bareos-database-tools
+          - bareos-webui
     - name: Install Bareos-related packages on Engine
       yum:
-        name: "{{ item }}"
+        name: "{{ hvp_bareos_engine_packages }}"
         state: latest
-      with_items:
-        - bareos-tools
-        - bareos-client
-        - bareos-director
-        - bareos-database-postgresql
-        - bareos-database-tools
-        - bareos-webui
     - name: Cleanup Bareos rpm leftovers on Engine
       command: "{{ item }}"
       register: cleanupenginebareosinstleftovers_result
