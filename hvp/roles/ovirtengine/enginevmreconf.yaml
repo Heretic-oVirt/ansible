@@ -51,8 +51,16 @@
       register: enablepsychotic_result
     - name: Add HVP release package
       yum:
-        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-2.noarch.rpm
+        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-3.noarch.rpm
         state: latest
+    - name: Enable HVP RHV repo
+      command: yum-config-manager --enable hvp-rhv-rebuild
+      register: enablehvprhvrebuild_result
+      when: not hvp_orthodox_mode
+    - name: Prefer HVP RHV repo
+      command: yum-config-manager --save --setopt='hvp-rhv-rebuild.priority=50'
+      register: preferhvprhvrebuild_result
+      when: not hvp_orthodox_mode
     - name: Enable HVP RHGS repo
       command: yum-config-manager --enable hvp-rhgs-rebuild
       register: enablehvprhgsrebuild_result
@@ -68,6 +76,14 @@
     - name: Prefer HVP Openvswitch repo
       command: yum-config-manager --save --setopt='hvp-openvswitch-rebuild.priority=50'
       register: preferhvpovsrebuild_result
+      when: not hvp_orthodox_mode
+    - name: Enable HVP RH Satellite repo
+      command: yum-config-manager --enable hvp-rhsat-rebuild
+      register: enablehvprhsatrebuild_result
+      when: not hvp_orthodox_mode
+    - name: Prefer HVP RH Satellite repo
+      command: yum-config-manager --save --setopt='hvp-rhsat-rebuild.priority=50'
+      register: preferhvprhsatrebuild_result
       when: not hvp_orthodox_mode
     - name: Disable use of mirrors in all repos
       shell: "sed -i -e 's/^mirrorlist/#mirrorlist/ ; s/^metalink/#metalink/ ; s/^#baseurl/baseurl/' $(find /etc/yum.repos.d -type f -name '*.repo' -print)"
