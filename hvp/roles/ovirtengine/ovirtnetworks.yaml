@@ -12,17 +12,19 @@
     - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
+    - name: List OVN-related packages
+      set_vars:
+        hvp_ovn_engine_packages:
+          - openvswitch
+          - openvswitch-ovn-common
+          - openvswitch-ovn-central
+          - python-openvswitch
+          - ovirt-provider-ovn
     - name: Install OVN-related packages
       # TODO: lower log level in /etc/ovirt-provider-ovn/logger.conf
       yum:
-        name: "{{ item }}"
+        name: "{{ hvp_ovn_engine_packages }}"
         state: latest
-      with_items:
-        - openvswitch
-        - openvswitch-ovn-common
-        - openvswitch-ovn-central
-        - python-openvswitch
-        - ovirt-provider-ovn
     - name: Enable and start OVN-related services
       systemd:
         name: "{{ item }}"
@@ -32,9 +34,10 @@
       with_items:
         - ovirt-provider-ovn
     - name: Reload firewalld to detect OVN-provider service
+      # Note: using restarted instead of reloaded state to make sure that the service is running
       systemd:
         name: firewalld
-        state: reloaded
+        state: restarted
         no_block: no
     - name: Allow OVN-provider communications
       firewalld:
