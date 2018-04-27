@@ -435,14 +435,6 @@
       command: newaliases
       register: newaliases_result
       when: aliases_result.changed
-    - name: Enable and start needed services
-      systemd:
-        name: "{{ item }}"
-        enabled: true
-        state: started
-        no_block: no
-      with_items:
-        - haveged
     - name: Disable and stop unneeded services
       systemd:
         name: "{{ item }}"
@@ -459,6 +451,7 @@
         no_block: no
       with_items:
         - firewalld
+        - haveged
     - name: Create oVirt-shell configuration file
       # TODO: check autoconnect - maybe unsupported because of oVirt-shell deprecation
       template:
