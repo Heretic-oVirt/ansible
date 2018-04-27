@@ -4,7 +4,7 @@
   hosts: localhost
   tasks:
     - include_tasks: ../common/tasks/createkeys.yaml
-- name: Perform OVN configuration on oVirt Engine
+- name: Perform OVN configuration on Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
@@ -12,7 +12,7 @@
     - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: List OVN-related packages
+    - name: List OVN-related packages on Engine
       set_vars:
         hvp_ovn_engine_packages:
           - openvswitch
@@ -20,12 +20,12 @@
           - openvswitch-ovn-central
           - python-openvswitch
           - ovirt-provider-ovn
-    - name: Install OVN-related packages
+    - name: Install OVN-related packages on Engine
       # TODO: lower log level in /etc/ovirt-provider-ovn/logger.conf
       yum:
         name: "{{ hvp_ovn_engine_packages }}"
         state: latest
-    - name: Enable and start OVN-related services
+    - name: Enable and start OVN-related services on Engine
       systemd:
         name: "{{ item }}"
         enabled: true
@@ -63,7 +63,7 @@
     - name: Configure OVN central to listen on ports - North
       command: ovn-nbctl set-connection ptcp:6641
       register: centralconf2_result
-- name: Perform OVN configuration on oVirt nodes
+- name: Perform OVN configuration on nodes
   hosts: ovirtnodes
   remote_user: root
   tasks:
@@ -71,10 +71,10 @@
     - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: Configure OVN VIF driver
+    - name: Configure OVN VIF driver on nodes
       command: "vdsm-tool ovn-config {{ hostvars[groups['ovirtengine'] | first]['ansible_default_ipv4']['address'] }} {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       register: vifconf_result
-- name: Perform OVN networks creation on oVirt Engine
+- name: Perform OVN networks creation on Engine
   hosts: ovirtengine
   remote_user: root
   tasks:
@@ -82,7 +82,7 @@
       command: "ovn-nbctl --may-exist ls-add {{ item }}"
       register: createovnnetwork_result
       with_items: "{{ hvp_ovn_private_network_names }}"
-- name: Perform network discovery on hosts
+- name: Perform network discovery on nodes
   hosts: ovirtnodes
   remote_user: root
   tasks:
