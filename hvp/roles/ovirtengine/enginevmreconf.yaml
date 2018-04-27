@@ -81,68 +81,72 @@
         state: latest
         update_cache: yes
         disablerepo: "ovirt-{{ compatibility_version }}"
+    - name: List HVP-recommended packages
+      set_vars:
+        hvp_generic_engine_packages:
+          - abrt
+          - abrt-addon-ccpp
+          - abrt-addon-kerneloops
+          - abrt-addon-pstoreoops
+          - abrt-addon-python
+          - abrt-addon-vmcore
+          - abrt-cli
+          - libreport-plugin-mailx
+          - bash-completion
+          - rsync
+          - ntpdate
+          - mcstrans
+          - stunnel
+          - symlinks
+          - dos2unix
+          - unix2dos
+          - screen
+          - telnet
+          - tree
+          - iptraf
+          - iptstate
+          - nss-tools
+          - patch
+          - expect
+          - ncompress
+          - libnl
+          - redhat-lsb
+          - haveged
+          - hping3
+          - p7zip
+          - p7zip-plugins
+          - unrar
+          - arj
+          - pwgen
+          - yum-cron
+          - yum-plugin-ps
+          - gdisk
+          - nmon
+          - dstat
+          - pdsh
+          - pdsh-rcmd-ssh
+          - NetworkManager-glib
+          - nm-connection-editor
+          - libselinux-python
+          - libsemanage-python
+          - virtio-win
     - name: Install HVP-recommended packages
       yum:
-        name: "{{ item }}"
+        name: "{{ hvp_generic_engine_packages }}"
         state: latest
-      with_items:
-        - abrt
-        - abrt-addon-ccpp
-        - abrt-addon-kerneloops
-        - abrt-addon-pstoreoops
-        - abrt-addon-python
-        - abrt-addon-vmcore
-        - abrt-cli
-        - libreport-plugin-mailx
-        - bash-completion
-        - rsync
-        - ntpdate
-        - mcstrans
-        - stunnel
-        - symlinks
-        - dos2unix
-        - unix2dos
-        - screen
-        - telnet
-        - tree
-        - iptraf
-        - iptstate
-        - nss-tools
-        - patch
-        - expect
-        - ncompress
-        - libnl
-        - redhat-lsb
-        - haveged
-        - hping3
-        - p7zip
-        - p7zip-plugins
-        - unrar
-        - arj
-        - pwgen
-        - yum-cron
-        - yum-plugin-ps
-        - gdisk
-        - nmon
-        - dstat
-        - pdsh
-        - pdsh-rcmd-ssh
-        - NetworkManager-glib
-        - nm-connection-editor
-        - libselinux-python
-        - libsemanage-python
-        - virtio-win
+    - name: List Bareos-related packages
+      set_vars:
+        hvp_bareos_engine_packages:
+          - bareos-tools
+          - bareos-client
+          - bareos-director
+          - bareos-database-postgresql
+          - bareos-database-tools
+          - bareos-webui
     - name: Install Bareos-related packages
       yum:
-        name: "{{ item }}"
+        name: "{{ hvp_bareos_engine_packages }}"
         state: latest
-      with_items:
-        - bareos-tools
-        - bareos-client
-        - bareos-director
-        - bareos-database-postgresql
-        - bareos-database-tools
-        - bareos-webui
     - name: Cleanup rpm leftovers
       command: "{{ item }}"
       register: cleanupleftovers_result
@@ -447,6 +451,14 @@
         no_block: no
       with_items:
         - yum-cron
+    - name: Enable and start needed services
+      systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+        no_block: no
+      with_items:
+        - firewalld
     - name: Create oVirt-shell configuration file
       # TODO: check autoconnect - maybe unsupported because of oVirt-shell deprecation
       template:
