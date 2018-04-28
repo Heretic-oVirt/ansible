@@ -32,7 +32,7 @@
         group: "{{ item.group }}"
         mode: "{{ item.mode }}"
       with_items:
-        - { path: '/mnt/homes', owner: 'root', group: 'root', mode: '0751' }
+        - { path: '/mnt/users', owner: 'root', group: 'root', mode: '0751' }
         - { path: '/mnt/profiles', owner: 'root', group: 'root', mode: '1751' }
         - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
         - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
