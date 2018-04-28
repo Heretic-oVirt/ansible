@@ -10,10 +10,14 @@
       with_items:
         - "../common/vars/hvp.yaml"
         - "../common/vars/ad.yaml"
+    - name: Choose an AD DC
+      # Note: AD DC identified by resolving the AD domain DNS name
+      set_vars:
+        chosen_ad_dc: "{{ lookup('dig', hvp_adjoin_domain, wantlist=True) | first }}"
     - name: Wait for full AD DC availability
-      # Note: we wait for DNS, RPC, LDAP and Kerberos (password change) services to be listening on a DC (identified by resolving the AD domain DNS name)
+      # Note: we wait for DNS, RPC, LDAP and Kerberos (password change) services to be listening on a DC
       wait_for:
-        host: "{{ lookup('dig', hvp_adjoin_domain, wantlist=True) | first }}"
+        host: "{{ chosen_ad_dc }}"
         port: "{{ item }}"
         state: started
         delay: 0
@@ -35,7 +39,17 @@
       with_items:
         - "../common/vars/hvp.yaml"
         - "../common/vars/ad.yaml"
-    - name: Prepare Samba domain-based configuration file
+    - name: Prepare Samba domain-based user-mapping configuration file
+      template:
+        src: templates/smbusers-domain.j2
+        dest: /etc/samba/smbusers
+        owner: root
+        group: root
+        mode: 0644
+    - name: Signal Samba services to apply the configuration above
+      command: smbcontrol all reload-config
+      register: smbcontrolreload_result
+    - name: Prepare Samba domain-based main configuration file
       template:
         src: templates/smb-domain.j2
         dest: /etc/samba/smb.conf
@@ -57,6 +71,7 @@
       args:
         executable: /usr/bin/expect
     - name: Join AD domain
+      # TODO: use the AD DC identified above to perform AD joining
       shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)"
       register: join_result
     - name: Add further Kerberos SPNs
@@ -66,9 +81,14 @@
         - cifs
         - nfs
     - name: Extract cluster keytab
-      # TODO: either move the keytab in a shared area or replicate it on all nodes (must be kept up-to-date)
+      # TODO: either move the keytab in a shared area or replicate it on all nodes
+      # TODO: find a way to keep it up-to-date
+      # Note: the keytab mainly is needed by NFS-Ganesha for kerberized NFSv4 serving
       shell: net ads keytab create -k
       register: keytabcreate_result
+    - name: Grant disk administration privileges to Domain Admins
+      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\Domain Admins' SeDiskOperatorPrivilege -k"
+      register: diskprivilegegrant_result
     - name: Remove Kerberos ticket
       command: kdestroy
       register: kdestroy_result
