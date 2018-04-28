@@ -37,14 +37,10 @@
 
    map to guest = Bad user
    username map = /etc/samba/smbusers
-   store dos attributes = no
-   map acl inherit = no
-   dos filemode = no
+   vfs objects = acl_xattr
+   store dos attributes = yes
+   map acl inherit = yes
    dos filetime resolution = yes
-   create mask = 0664
-   force create mode = 440
-   directory mask = 6775
-   force directory mode = 550
    unix extensions = no
    hide special files = yes
    dead time = 15
@@ -69,25 +65,23 @@
 
 #====================== Local Share Definitions ==============================
 
-[Homes]
+# Set ACL from Windows as per https://wiki.samba.org/index.php/User_Home_Folders
+[Users]
    comment = User personal folder
-   path = /homes
+   path = /users
    browseable = no
    writable = yes
    available = yes
    guest ok = no
    valid users = %S
-   create mask = 0600
-   directory mask = 0700
-   force create mode = 00
-   force directory mode = 00
    vfs objects = glusterfs recycle
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
-   glusterfs:logfile = /var/log/samba/glusterfs-homes.log
+   glusterfs:logfile = /var/log/samba/glusterfs-users.log
    glusterfs:volume = {{ hvp_winshare_volume_name }}
 
+# Set ACL from Windows as per https://wiki.samba.org/index.php/Roaming_Windows_User_Profiles
 [Profiles]
    comment = User profile folder
    path = /profiles
@@ -95,13 +89,6 @@
    writable = yes
    available = yes
    guest ok = no
-   profile acls = yes
-   csc policy = disable
-   create mask = 0600
-   directory mask = 0700
-   force create mode = 00
-   force directory mode = 00
-   hide files = /desktop.ini/outlook*.lnk/*Briefcase*/$RECYCLE.BIN/
    vfs objects = glusterfs recycle
    recycle:keeptree = no
    recycle:versions = yes
@@ -109,8 +96,9 @@
    glusterfs:logfile = /var/log/samba/glusterfs-profiles.log
    glusterfs:volume = {{ hvp_winshare_volume_name }}
 
+# Set ACL from Windows as per https://wiki.samba.org/index.php/Setting_up_a_Share_Using_Windows_ACLs#Setting_ACLs_on_a_Folder
 [Groups]
-   comment = Group folders
+   comment = Group folder
    path = /groups
    browseable = yes
    writable = yes
