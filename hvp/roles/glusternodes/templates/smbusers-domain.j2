@@ -1,0 +1,3 @@
+# Unix_name = SMB_name1 SMB_name2 ...
+# The following seems to be needed to avoid errors granting privilegs as per https://wiki.samba.org/index.php/Samba_Member_Server_Troubleshooting
+!root = {{ hvp_netbios_domainname }}\Administrator {{ hvp_netbios_domainname }}\administrator
