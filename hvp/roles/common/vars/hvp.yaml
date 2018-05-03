@@ -31,6 +31,7 @@ hvp_spice_pki_subject: "C=EN, L=Test, O=Test, CN=Test"
 hvp_pki_subject: "/C=EN/L=Test/O=Test/CN=Test"
 hvp_ca_subject: "/C=EN/L=Test/O=Test/CN=TestCA"
 hvp_admin_username: hvpadmin
+hvp_admin_password: hvpdemo
 hvp_email_sender: root@localhost
 hvp_email_receiver: monitoring@localhost
 
