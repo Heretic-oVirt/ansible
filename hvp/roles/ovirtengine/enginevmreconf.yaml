@@ -109,6 +109,7 @@
           - abrt-cli
           - libreport-plugin-mailx
           - bash-completion
+          - logcheck
           - rsync
           - ntpdate
           - mcstrans
@@ -410,6 +411,48 @@
         - { pname: 'kernel.sched_migration_cost_ns', pvalue: '5000000', pfrag: '/etc/sysctl.d/virtualguest.conf' }
       when:
         - ansible_virtualization_role == "guest"
+    - name: Configure logcheck email reports receiver
+      lineinfile:
+        state: present
+        path: /etc/logcheck/logcheck.conf
+        insertbefore: BOF
+        regexp: '^SENDMAILTO='
+        line: "SENDMAILTO={{ hvp_email_receiver }}"
+      register: logcheckconf_result
+    - Configure logcheck rules
+      file:
+        path: "{{ item.path }}"
+        state: link
+        src: "{{ item.src }}"
+        force: yes
+        owner: root
+        group: root
+      with_items:
+        - { path: '/etc/logcheck/violations.ignore.d/kernel', src: '../ignore.d.server/kernel' }
+        - { path: '/etc/logcheck/violations.ignore.d/systemd', src: '../ignore.d.server/systemd' }
+    - name: Reconfigure logrotate for logcheck compliance
+      # TODO: reconfigure syslog files for Logcheck as per https://bugzilla.redhat.com/show_bug.cgi?id=1062147 - remove when fixed upstream
+      lineinfile:
+        state: present
+        path: /etc/logrotate.d/syslog
+        insertafter: '^[[:space:]]*missingok'
+        regexp: '^[[:space:]]*create 0640 root adm'
+        line: '    create 0640 root adm'
+      register: logrotatelogcheckcompat_result
+    - name: Reconfigure log files for logcheck compliance
+      # TODO: reconfigure syslog files for Logcheck as per https://bugzilla.redhat.com/show_bug.cgi?id=1062147 - remove when fixed upstream
+      file:
+        path: "{{ item }}"
+        state: file
+        owner: root
+        group: adm
+        mode: 0640
+      with_items:
+        - /var/log/messages
+        - /var/log/secure
+        - /var/log/cron
+        - /var/log/maillog
+        - /var/log/spooler
     - name: Configure logrotate
       lineinfile:
         state: present
@@ -437,8 +480,19 @@
 # TODO: ensure proper general firewalld configuration
     - name: Configure firewalld to log all denied connections
       # TODO: disable for production use
-      command: firewall-cmd --set-log-denied=all
+      command: "{{ item }}"
       register: firewalldlogall_result
+      with_items:
+        - firewall-cmd --set-log-denied=all
+        - firewall-cmd --reload
+    - name: Create HVP admin user
+      user:
+        name: "{{ hvp_admin_username }}"
+        state: present
+        comment: Admin
+        groups: wheel
+        append: yes
+        password: "{{ hvp_admin_password | password_hash('sha512') }}"
     - name: Configure mail aliases
       lineinfile:
         state: present
@@ -451,6 +505,14 @@
       command: newaliases
       register: newaliases_result
       when: aliases_result.changed
+    - name: Create missing pipe for Postfix
+      # TODO: it seems that a Postfix error gets regularly logged because of this missing pipe - remove when fixed upstream
+      command: "{{ item }}"
+      ignore_errors: yes
+      register: createpostfixfifo_result
+      with_items:
+        - mkfifo /var/spool/postfix/public/pickup
+        - chown postfix:postdrop /var/spool/postfix/public/pickup
     - name: Disable and stop unneeded services
       systemd:
         name: "{{ item }}"
