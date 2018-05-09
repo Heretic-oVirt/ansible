@@ -154,7 +154,6 @@
         bareos_webui_admin_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits encrypt=no') }}"
     - name: Set parameters in configuration files on Engine
       # TODO: find if/where to set the director monitoring password
-      # TODO: configure jobdefs (add templates for jobs below)
       # TODO: configure jobs (add one backup job for each node - add one backup job for each Gluster share volume - add restore jobs)
       # TODO: customize recipients in messages (use monitoring address)
       # TODO: customize pools (change retention times)
@@ -211,6 +210,8 @@
       with_items:
         - { src: "files/NoneClient.conf", dest: "/etc/bareos/bareos-dir.d/client/None.conf" }
         - { src: "files/NoneSet.conf", dest: "/etc/bareos/bareos-dir.d/fileset/None.conf" }
+        - { src: "files/LinuxDefaultJob.conf", dest: "/etc/bareos/bareos-dir.d/jobdefs/LinuxDefaultJob.conf" }
+        - { src: "files/WindowsDefaultJob.conf", dest: "/etc/bareos/bareos-dir.d/jobdefs/WindowsDefaultJob.conf" }
     - name: Create custom fileset configuration files on Engine
       template:
         src: "{{ item.src }}"
