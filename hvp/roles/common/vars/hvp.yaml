@@ -6,6 +6,7 @@ hvp_management_domainname: mgmt.private
 hvp_gluster_domainname: gluster.private
 hvp_storage_name: discord
 hvp_orthodox_mode: false
+hvp_ovirt_nightly_mode: false
 hvp_master_node: "{{ groups['ovirt_master'] | first }}"
 # TODO: dynamically determine proper values for Engine RAM/CPUs/imgsize
 hvp_engine_ram: 4096
