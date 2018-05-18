@@ -25,18 +25,9 @@
         username: "{{ username }}"
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
-    - name: Set Management as default VMs network
-      set_vars:
-        vms_network_name: "{{ hvp_mgmt_bridge_name }}"
-        vms_network: "{{ mgmt_network }}"
-    - name: Set VMs network in presence of LAN dedicated connection
-      set_vars:
-        vms_network_name: "{{ hvp_lan_bridge_name }}"
-        vms_network: "{{ lan_network }}"
-      when: got_lan_network
     - name: Create all guest VMs
       include_tasks: tasks/createvm.yaml
-      loop: "{{ hvp_vms }}"
+      loop: "{{ guest_vms }}"
       loop_control:
         loop_var: outer_item
         label: "{{ outer_item.vm_name }}"
