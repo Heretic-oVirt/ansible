@@ -181,17 +181,33 @@
       copy:
         content: |
           #!/bin/bash
-          # Create oVirt Engine dump to be picked up by standard filesystem backup
           prefix="$(hostname)-$(date '+%Y-%m-%d_%H-%M-%S')"
+          # Create oVirt Engine dump to be picked up by standard filesystem backup
+          mkdir -p /var/local/backup/engine
           content="ovirt-engine-backup"
-          engine-backup --file=/var/local/backup/${prefix}-${content}.tar.gz --mode=backup --log=/var/local/backup/${prefix}-${content}.log
+          engine-backup --file=/var/local/backup/engine/${prefix}-${content}.tar.gz --mode=backup --log=/var/local/backup/engine/${prefix}-${content}.log
           res=$?
           if [ ${res} -ne 0 ]; then
             # In case of errors, do not remove anything and return error code upstream
             exit ${res}
           fi
           # Keep only the last two dumps and logs
-          find /var/local/backup -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
+          find /var/local/backup/engine -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
+          # Create Bareos Director catalog dump to be picked up by standard filesystem backup
+          mkdir -p /var/local/backup/director
+          content="bareos-catalog-backup"
+          dbname=$(grep '^[[:space:]]*dbname' /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf | sed -e 's/^.*=\s*\(.*\)$/\1/')
+          dbuser=$(grep '^[[:space:]]*dbuser' /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf | sed -e 's/^.*=\s*\(.*\)$/\1/')
+          PGPASSWORD=$(grep '^[[:space:]]*dbpassword' /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf | sed -e 's/^.*=\s*\(.*\)$/\1/')
+          export PGPASSWORD
+          pg_dump -v -U ${dbuser} -F c -f /var/local/backup/director/${prefix}-${content}.pgdump ${dbname} > /var/local/backup/director/${prefix}-${content}.log 2>&1
+          res=$?
+          if [ ${res} -ne 0 ]; then
+            # In case of errors, do not remove anything and return error code upstream
+            exit ${res}
+          fi
+          # Keep only the last two dumps and logs
+          find /var/local/backup/director -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
         dest: /usr/local/sbin/dump2backup
         owner: root
         group: root
