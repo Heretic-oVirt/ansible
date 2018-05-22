@@ -1,0 +1,5 @@
+Job {
+  Name = "BackupNode{{ hostvars[item]['ansible_hostname'] | title }}"
+  Client = {{ hostvars[item]['ansible_hostname'] }}-fd
+  JobDefs = "LinuxDefaultJob"
+}
