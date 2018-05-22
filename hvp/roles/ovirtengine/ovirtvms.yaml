@@ -2,7 +2,6 @@
 # Ansible playbook for automated oVirt VMs creation
 # Note: Thanks to Simone Tiraboschi for initial Ansible oVirt management hints
 # TODO: find a way to extract minimum desired parameters from local Kickstart file and use those for vm creation in loop
-# TODO: find a way to create a vm from scratch (including disks and nics) and make it boot once from network with Kickstart installation (on-the-fly configure PXELinux on installer machine using pre-defined MAC address)
 # TODO: remove all PXELinux custom menu files (/var/lib/tftpboot/pxelinux.cfg/01-*) at the end
 - name: Generate SSH key if not present
   hosts: localhost
@@ -31,8 +30,6 @@
       loop_control:
         loop_var: outer_item
         label: "{{ outer_item.vm_name }}"
-        # TODO: remove or lower to 10 seconds when adding proper wait_for inside loop
-        pause: 1500
     - name: Revoke the SSO token
       no_log: true
       ovirt_auth:
