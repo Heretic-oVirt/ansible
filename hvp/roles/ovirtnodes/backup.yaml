@@ -74,6 +74,7 @@
         - { path: "/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
         - { path: "/etc/bareos/bareos-sd.d/storage/bareos-sd.conf", regexp: "^([[:space:]]*)Name", line: "\Name = {{ ansible_hostname }}-sd" }
         - { path: "/etc/bareos/bareos-sd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_dir_password }}\"" }
+        - { path: "/etc/bareos/bareos-sd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)#*[[:space:]]*Heartbeat Interval[[:space:]]*=", line: "\1Heartbeat Interval = 1 min" }
         - { path: "/etc/bareos/bareos-sd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_mon_password }}\"" }
         - { path: "/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_mon_password }}\"" }
         - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: "\1Device Options = \"uri=gluster://localhost/{{ hvp_backup_volume_name }}/bareos\"" }
