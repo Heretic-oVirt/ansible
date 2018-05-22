@@ -186,13 +186,12 @@
           mkdir -p /var/local/backup/engine
           content="ovirt-engine-backup"
           engine-backup --file=/var/local/backup/engine/${prefix}-${content}.tar.gz --mode=backup --log=/var/local/backup/engine/${prefix}-${content}.log
-          res=$?
-          if [ ${res} -ne 0 ]; then
-            # In case of errors, do not remove anything and return error code upstream
-            exit ${res}
+          res1=$?
+          # In case of errors, do not remove anything and return error code upstream
+          if [ ${res1} -eq 0 ]; then
+            # Keep only the last two dumps and logs
+            find /var/local/backup/engine -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
           fi
-          # Keep only the last two dumps and logs
-          find /var/local/backup/engine -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
           # Create Bareos Director catalog dump to be picked up by standard filesystem backup
           mkdir -p /var/local/backup/director
           content="bareos-catalog-backup"
@@ -201,13 +200,16 @@
           PGPASSWORD=$(grep '^[[:space:]]*dbpassword' /etc/bareos/bareos-dir.d/catalog/MyCatalog.conf | sed -e 's/^.*=\s*\(.*\)$/\1/')
           export PGPASSWORD
           pg_dump -v -U ${dbuser} -F c -f /var/local/backup/director/${prefix}-${content}.pgdump ${dbname} > /var/local/backup/director/${prefix}-${content}.log 2>&1
-          res=$?
-          if [ ${res} -ne 0 ]; then
-            # In case of errors, do not remove anything and return error code upstream
-            exit ${res}
+          res2=$?
+          # In case of errors, do not remove anything and return error code upstream
+          if [ ${res2} -eq 0 ]; then
+            # Keep only the last two dumps and logs
+            find /var/local/backup/director -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
           fi
-          # Keep only the last two dumps and logs
-          find /var/local/backup/director -type f -printf '%T@\t%p\0' | sort -z -nrk1 | sed -z -n -e '5,\$s/^\\S*\\s*//p' | xargs -0 rm -f --
+          if [ ${res1} -ne 0 -o ${res2} -ne 0 ]; then
+            logger -s -p "local7.err" -t "dump2backup" "Error in dump procedures (res1: ${res1} - res2: ${res2})"
+            exit 255
+          fi
         dest: /usr/local/sbin/dump2backup
         owner: root
         group: root
