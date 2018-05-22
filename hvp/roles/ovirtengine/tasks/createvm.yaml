@@ -26,9 +26,6 @@
     cpu_shares: "{{ outer_item.vm_cpu_shares }}"
     type: "{{ outer_item.vm_type }}"
     operating_system: "{{ outer_item.vm_operating_system }}"
-    boot_devices:
-      - hd
-      - network
     wait: true
 - name: Create oVirt VM disk
   ovirt_disks:
@@ -58,5 +55,16 @@
     state: running
     cluster: "{{ cluster_name }}"
     name: "{{ outer_item.vm_name }}"
+    boot_devices:
+      - hd
+      - network
     wait: true
-# TODO: wait for a specific outer_item.vm_service_port and remove/lower external loop pause
+- name: Wait for VM specific service port availability
+  wait_for:
+    host: "{{ outer_item.vm_service_ip }}"
+    port: "{{ outer_item.vm_service_port }}"
+    state: started
+    connect_timeout: 30
+    delay: 600
+    sleep: 90
+    timeout: 1800
