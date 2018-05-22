@@ -68,13 +68,12 @@
         line: "{{ item.line }}"
       register: setnodesbareosparameters_result
       with_items:
-        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: "\Name = {{ ansible_hostname }}-fd" }
+        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = {{ ansible_hostname }}-fd" }
         - { path: "/etc/bareos/bareos-fd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_dir_password'] }}\"" }
         - { path: "/etc/bareos/bareos-fd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
         - { path: "/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
-        - { path: "/etc/bareos/bareos-sd.d/storage/bareos-sd.conf", regexp: "^([[:space:]]*)Name", line: "\Name = {{ ansible_hostname }}-sd" }
+        - { path: "/etc/bareos/bareos-sd.d/storage/bareos-sd.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = {{ ansible_hostname }}-sd\n\1Heartbeat Interval = 1 min" }
         - { path: "/etc/bareos/bareos-sd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_dir_password }}\"" }
-        - { path: "/etc/bareos/bareos-sd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)#*[[:space:]]*Heartbeat Interval[[:space:]]*=", line: "\1Heartbeat Interval = 1 min" }
         - { path: "/etc/bareos/bareos-sd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_mon_password }}\"" }
         - { path: "/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_mon_password }}\"" }
         - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: "\1Device Options = \"uri=gluster://localhost/{{ hvp_backup_volume_name }}/bareos\"" }
@@ -171,12 +170,13 @@
         line: "{{ item.line }}"
       register: setenginebareosparameters_result
       with_items:
-        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: "\Name = bareos-fd" }
+        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = bareos-fd" }
         - { path: "/etc/bareos/bareos-fd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_dir_password'] }}\"" }
         - { path: "/etc/bareos/bareos-fd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
         - { path: "/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_mon_password'] }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/client/bareos-fd.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_fd_dir_password'] }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_dir_dir_password'] }}\"" }
+        - { path: "/etc/bareos/bareos-dir.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)#*[[:space:]]*Heartbeat Interval[[:space:]]*=", line: "\1Heartbeat Interval = 1 min" }
         - { path: "/etc/bareos/bareos-dir.d/console/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ hostvars[inventory_hostname]['bareos_dir_mon_password'] }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf", regexp: "^([[:space:]]*)dbdriver", line: "\1dbdriver = \"postgresql\"" }
         - { path: "/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf", regexp: "^([[:space:]]*)dbpassword", line: "\1dbpassword = \"{{ hostvars[inventory_hostname]['bareos_dir_db_password'] }}\"" }
