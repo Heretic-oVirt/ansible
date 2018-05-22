@@ -1,0 +1,11 @@
+FileSet {
+  Name = "GlusterSetVol{{ item.volume_name }}Dir{{ item.dir_name }}"
+  Include {
+    Options {
+      aclsupport = yes
+      signature = MD5
+      xattrsupport = yes
+    }
+    Plugin = "gfapi:volume=gluster\\://{{ item.storage_hos_name }}/{{ item.volume_name }}/{{ item.dir_name }}:"
+  }
+}
