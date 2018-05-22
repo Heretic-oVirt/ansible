@@ -4,4 +4,5 @@ Client {
   Description = "Client resource of oVirt node {{ item }}."
   Address = {{ item }}
   Password = "{{ hostvars[item]['bareos_fd_dir_password'] }}"          # password for FileDaemon
+  Heartbeat Interval = 1 minute
 }
