@@ -187,6 +187,14 @@
         group: bareos
         mode: 0640
       with_items: "{{ groups['ovirtnodes'] }}"
+    - name: Create a job configuration file for each oVirt node on Engine
+      template:
+        src: templates/backup-node-fd.j2
+        dest: "/etc/bareos/bareos-dir.d/job/backup-{{ hostvars[item]['ansible_hostname'] }}-fd.conf"
+        owner: bareos
+        group: bareos
+        mode: 0640
+      with_items: "{{ groups['ovirtnodes'] }}"
     - name: Create a GlusterFS storage configuration file on Engine
       template:
         src: templates/Gluster.j2
