@@ -26,16 +26,12 @@
       warn: false
     - name: Create the toplevel folders intended for CIFS sharing
       file:
-        path: "{{ item.path }}"
+        path: "/mnt{{ item.path }}"
         state: directory
         owner: "{{ item.owner }}"
         group: "{{ item.group }}"
         mode: "{{ item.mode }}"
-      with_items:
-        - { path: '/mnt/users', owner: 'root', group: 'root', mode: '0751' }
-        - { path: '/mnt/profiles', owner: 'root', group: 'root', mode: '1751' }
-        - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
-        - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
+      with_items: "{{ hvp_winshare_subfolders }}"
       when: winsharemount_result.rc == 0
     - name: Unmount the Gluster volume intended for CIFS sharing
       command: "umount -l /mnt"
@@ -51,16 +47,12 @@
       warn: false
     - name: Create the toplevel folders intended for NFS sharing
       file:
-        path: "{{ item.path }}"
+        path: "/mnt{{ item.path }}"
         state: directory
         owner: "{{ item.owner }}"
         group: "{{ item.group }}"
         mode: "{{ item.mode }}"
-      with_items:
-        - { path: '/mnt/homes', owner: 'root', group: 'root', mode: '0711' }
-        - { path: '/mnt/groups', owner: 'root', group: 'root', mode: '0755' }
-        - { path: '/mnt/software', owner: 'root', group: 'root', mode: '0755' }
-        - { path: '/mnt/data', owner: 'root', group: 'root', mode: '0755' }
+      with_items: "{{ hvp_unixshare_subfolders }}"
       when: unixsharemount_result.rc == 0
     - name: Unmount the Gluster volume intended for NFS sharing
       command: "umount -l /mnt"
