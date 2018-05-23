@@ -60,18 +60,18 @@ hvp_winshare_volume_name: winshare
 hvp_winshare_size: "1024GB"
 hvp_winshare_arbitersize: "10GB"
 hvp_winshare_subfolders:
-  - { path: '/users', owner: 'root', group: 'root', mode: '0751' }
-  - { path: '/profiles', owner: 'root', group: 'root', mode: '1751' }
-  - { path: '/groups', owner: 'root', group: 'root', mode: '0755' }
-  - { path: '/software', owner: 'root', group: 'root', mode: '0755' }
+  - { path: 'users', owner: 'root', group: 'root', mode: '0751' }
+  - { path: 'profiles', owner: 'root', group: 'root', mode: '1751' }
+  - { path: 'groups', owner: 'root', group: 'root', mode: '0755' }
+  - { path: 'software', owner: 'root', group: 'root', mode: '0755' }
 hvp_unixshare_volume_name: unixshare
 hvp_unixshare_size: "1024GB"
 hvp_unixshare_arbitersize: "10GB"
 hvp_unixshare_subfolders:
-  - { path: '/homes', owner: 'root', group: 'root', mode: '0711' }
-  - { path: '/groups', owner: 'root', group: 'root', mode: '0755' }
-  - { path: '/software', owner: 'root', group: 'root', mode: '0755' }
-  - { path: '/data', owner: 'root', group: 'root', mode: '0755' }
+  - { path: 'homes', owner: 'root', group: 'root', mode: '0711' }
+  - { path: 'groups', owner: 'root', group: 'root', mode: '0755' }
+  - { path: 'software', owner: 'root', group: 'root', mode: '0755' }
+  - { path: 'data', owner: 'root', group: 'root', mode: '0755' }
 hvp_blockshare_volume_name: blockshare
 hvp_blockshare_size: "1024GB"
 hvp_blockshare_arbitersize: "10GB"
