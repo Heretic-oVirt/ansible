@@ -78,6 +78,7 @@
         - { path: "/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_mon_password }}\"" }
         - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: "\1Device Options = \"uri=gluster://localhost/{{ hvp_backup_volume_name }}/bareos\"" }
         - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = GlusterStorage" }
+        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)(Address.*)$", line: "\1# \2" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Password", line: "\1Password = \"{{ bareos_sd_dir_password }}\"" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Name", line: "\1Name = \"Gluster\"" }
         - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Device", line: "\1Device = \"GlusterStorage\"" }
@@ -156,12 +157,13 @@
     - name: Set parameters in configuration files on Engine
       # TODO: find if/where to set the director monitoring password
       # TODO: add jobdefs for restore jobs
-      # TODO: configure jobs (add one backup job for each node - add one backup job for each Gluster share volume - add restore jobs)
+      # TODO: configure jobs (add one backup job for each Gluster share volume - add restore jobs - add schedules to backup jobs)
       # TODO: customize recipients in messages (use monitoring address)
       # TODO: customize pools (change retention times)
       # TODO: customize profiles (add other roles besides operator?)
       # TODO: customize schedules (add MonthlyCycle?)
       # TODO: customize storages (add external USB/eSATA media - manage detection and encryption)
+      # TODO: add a disabled example of georeplication configuration for an offsite copy of backup Gluster volume
       lineninfile:
         state: present
         path: "{{ item.path }}"
@@ -224,7 +226,7 @@
         - { src: "files/NoneSet.conf", dest: "/etc/bareos/bareos-dir.d/fileset/None.conf" }
         - { src: "files/LinuxDefaultJob.conf", dest: "/etc/bareos/bareos-dir.d/jobdefs/LinuxDefaultJob.conf" }
         - { src: "files/WindowsDefaultJob.conf", dest: "/etc/bareos/bareos-dir.d/jobdefs/WindowsDefaultJob.conf" }
-    - name: Create custom fileset configuration files on Engine
+    - name: Create custom base fileset configuration files on Engine
       template:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
