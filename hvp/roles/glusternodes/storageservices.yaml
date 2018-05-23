@@ -26,7 +26,7 @@
       warn: false
     - name: Create the toplevel folders intended for CIFS sharing
       file:
-        path: "/mnt{{ item.path }}"
+        path: "/mnt/{{ item.path }}"
         state: directory
         owner: "{{ item.owner }}"
         group: "{{ item.group }}"
@@ -47,7 +47,7 @@
       warn: false
     - name: Create the toplevel folders intended for NFS sharing
       file:
-        path: "/mnt{{ item.path }}"
+        path: "/mnt/{{ item.path }}"
         state: directory
         owner: "{{ item.owner }}"
         group: "{{ item.group }}"
