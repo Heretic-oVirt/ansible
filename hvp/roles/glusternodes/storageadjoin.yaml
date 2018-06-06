@@ -72,7 +72,7 @@
         executable: /usr/bin/expect
     - name: Join AD domain
       # TODO: use the AD DC identified above to perform AD joining
-      shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)"
+      shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createcomputer="File Servers"
       register: join_result
     - name: Add further Kerberos SPNs
       shell: "net ads keytab add {{ item }} -k"
@@ -87,7 +87,7 @@
       shell: net ads keytab create -k
       register: keytabcreate_result
     - name: Grant disk administration privileges to Domain Admins
-      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\Domain Admins' SeDiskOperatorPrivilege -k"
+      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\\Domain Admins' SeDiskOperatorPrivilege -k"
       register: diskprivilegegrant_result
     - name: Remove Kerberos ticket
       command: kdestroy
