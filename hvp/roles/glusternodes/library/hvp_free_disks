@@ -23,7 +23,7 @@ fi
 # Note: suitable disks must be acceptable as physical volumes but currently unpartitioned and unassigned to any volume group or VDO
 free_disks=$(for disk in $(lsblk -b -d -o NAME,SIZE,ROTA -n | awk "{if ((\$2 > ${min_size_bytes}) && (\$3 >= ${accept_ssds})) print \$1}"); do
 	if ! pvs --noheadings | grep -q -w ${disk} && parted -s /dev/${disk} print 2>/dev/null | grep -iq '^partition.*unknown'; then
-		if [ "${has_vdo}" = "true" ]
+		if [ "${has_vdo}" = "true" ]; then
 			if ! vdo list --all | grep -q -w ${disk} ; then
 				echo ${disk}
 			fi
