@@ -1,12 +1,19 @@
 #!/bin/bash
-# Script to cleanup LVM configuration outside of the OS PV/VG/LVs
+# Script to cleanup VDO/LVM configuration outside of the OS PV/VG/LVs
 
 # Variables
-unset vol2rm_name vol2rm_vg vol2rm_mnt pv2rm_dev
+unset vol2rm_name vol2rm_vg vol2rm_mnt pv2rm_dev vdo2rm_name vdo2rm_disk
 
 # Define some useful commands
 wait_cmd="udevadm settle --timeout=5"
 trigger_cmd="udevadm trigger --verbose"
+
+# Detect VDO availability
+if [ -n "$(which vdo)" ]; then
+        has_vdo="true"
+else
+        has_vdo="false"
+fi
 
 # Note: autodetecting root volume group as that which holds the "/" LVM logical volume
 root_dev=$(mount | awk '{if ($3 == "/") {print $1}}')
@@ -19,6 +26,7 @@ fi
 # Linux LVM discovery
 if [ -n "${root_vg}" ]; then
 	# Find all LVM physical volumes belonging to non-root volume groups
+	i=0
 	for pv_name in $(pvs --noheadings -o pv_name); do
 		pv_vgname=$(pvs --noheadings -o vg_name "${pv_name}" | tr -d '[[:space:]]')
 		# Skip root volume group (does not belong to additional disk configuration)
@@ -29,6 +37,7 @@ if [ -n "${root_vg}" ]; then
 	done
 	# Find all non-root LVM volume groups and their logical volumes (with corresponding mountpoints)
 	# TODO: disk could be already in use also as: a raw partition or a Linux software RAID member - detect accordingly
+	j=0
 	for vg_name in $(vgs --noheadings -o vg_name); do
 		# Skip root volume group (does not belong to additional disk configuration)
 		if [ "${vg_name}" = "${root_vg}" ]; then
@@ -64,6 +73,17 @@ if [ -n "${root_vg}" ]; then
 else
 	echo "Unable to determine root volume group - exiting." 1>&2
 	exit 255
+fi
+
+# VDO discovery
+if [ "${has_vdo}" = "true" ]; then
+	i=0
+	for vdo_volname in $(vdo list --all); do
+		# TODO: detect whether the VDO volume is used inside the root VG and skip
+		vdo2rm_name[${i}]="${vdo_volname}"
+		vdo2rm_disk[${i}]="$(dmsetup status ${vdo_volname} | awk '{print $4}')"
+		i=$((${i}+1))
+	done
 fi
 
 # Unmount all found LVM logical volumes and remove their mountpoints (first loop for currently mounted filesystems)
@@ -130,8 +150,19 @@ for (( k=0; k<${#pv2rm_dev[*]}; k=k+1 )); do
 	${wait_cmd}
 done
 
+# Remove all found VDO volumes
+# Note: this could fail if something failed unmounting/removing before
+for (( k=0; k<${#vdo2rm_name[*]}; k=k+1 )); do
+	# Stop VDO volume
+	vdo stop --force --verbose --name="${vdo2rm_name[${k}]}"
+	${wait_cmd}
+	# Remove VDO volume
+	vdo remove --force --verbose --name="${vdo2rm_name[${k}]}"
+	${wait_cmd}
+done
+
 # Reinitialize all non-OS disks
-# Note: assuming that OS is confined to one disk and that there is no other active use for further disks (whose LVs/VGs/PVs have been removed above)
+# Note: assuming that OS is confined to one disk and that there is no other active use for further disks (whose LVs/VGs/PVs/VDOs have been removed above)
 sleep 10
 for (( i=0; i<${#pv2rm_dev[*]}; i=i+1 )); do
 	# Note: excluding partition vs whole-disk detection for devices under /dev/mapper
@@ -150,3 +181,22 @@ for (( i=0; i<${#pv2rm_dev[*]}; i=i+1 )); do
 	partprobe
 	${wait_cmd}
 done
+if [ "${has_vdo}" = "true" ]; then
+	for (( i=0; i<${#vdo2rm_disk[*]}; i=i+1 )); do
+	        # Note: excluding partition vs whole-disk detection for devices under /dev/mapper
+	        # TODO: find a strategy to detect whole-disk vs partition
+	        if [ "$(dirname ${vdo2rm_disk[${i}]})" = "/dev/mapper" ]; then
+	                base_dev="${vdo2rm_disk[${i}]}"
+	        else
+	                base_dev="$(echo ${vdo2rm_disk[${i}]} | sed -e 's/[0-9]*$//')"
+	        fi
+	        if [ -b "${base_dev}" ]; then
+	                # Clean up whole device
+	                dd if=/dev/zero of=${base_dev} bs=1M count=10
+	                dd if=/dev/zero of=${base_dev} bs=1M count=10 seek=$(($(blockdev --getsize64 ${base_dev}) / (1024 * 1024) - 10))
+	                ${wait_cmd}
+	        fi
+	        partprobe
+	        ${wait_cmd}
+	done
+fi

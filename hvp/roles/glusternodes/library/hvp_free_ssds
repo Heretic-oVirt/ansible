@@ -9,11 +9,24 @@ if [ -n "${1}" -a -f "${1}" ]; then
 	source "${1}"
 fi
 
+# Detect VDO availability
+if [ -n "$(which vdo)" ]; then
+        has_vdo="true"
+else
+        has_vdo="false"
+fi
+
 # Retrieve SSD list
 # Note: suitable SSDs must be acceptable as physical volumes but currently unpartitioned and unassigned to any volume group
 free_ssds=$(for disk in $(lsblk -b -d -o NAME,SIZE,ROTA -n | awk "{if ((\$2 > ${min_size_bytes}) && (\$3 == 0)) print \$1}"); do
 	if ! pvs --noheadings | grep -q ${disk} && parted -s /dev/${disk} print 2>/dev/null | grep -iq '^partition.*unknown'; then
-		echo ${disk}
+		if [ "${has_vdo}" = "true" ]
+			if ! vdo list --all | grep -q -w ${disk} ; then
+				echo ${disk}
+			fi
+		else
+			echo ${disk}
+		fi
 	fi
 done)
 

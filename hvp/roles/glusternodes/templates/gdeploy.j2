@@ -40,6 +40,7 @@ yes
 # Setup LVM
 # TODO: allow for SSD-backed (to be autodetected) LVM caches (either only one SSD partitioned to proportionally provide cache to all vgs or one dedicated SSD cache for each vg)
 # TODO: give error for an insufficient number of disks/hosts or insufficient space on disks
+# TODO: calculate all sizes from actually available disk space
 # Note: enginedomain (thick {{ hvp_enginedomain_size }}) LVs will host the oVirt Engine Gluster volume bricks
 # Note: vmstoredomain (thin {{ hvp_vmstoredomain_size }}) LVs will host the oVirt vm disks Gluster volume bricks
 # Note: isodomain (thin {{ hvp_isodomain_size }}) LVs will host the oVirt ISO images Gluster volume bricks
@@ -73,16 +74,32 @@ yes
 # Node {{ node_index }} setup
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
 {% set node_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
+{% set pv_name = hvp_use_vdo | ternary('vdo_' + node_disk, node_disk) %}
+
+{% if hvp_use_vdo %}
+[vdo{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ node_disk }}
+names={{ pv_name }}
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+{% endif %}
 
 [pv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ node_disk }}
+devices={{ pv_name }}
 ignore_pv_errors=no
 
 [vg{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-pvname={{ node_disk }}
+pvname={{ pv_name }}
 ignore_vg_errors=no
 
 [lv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
@@ -181,29 +198,59 @@ ignore_lv_errors=no
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
 # Note: we will use the biggest for CTDB/share/backup
 {% set share_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
+{% set share_pv_name = hvp_use_vdo | ternary('vdo_' + share_disk, share_disk) %}
 # Note: we will use the smallest for oVirt
 {% set ovirt_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | min) | map(attribute='name') | list | sort | last %}
+{% set ovirt_pv_name = hvp_use_vdo | ternary('vdo_' + ovirt_disk, ovirt_disk) %}
+
+{% if hvp_use_vdo %}
+[vdo{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ ovirt_disk }}
+names={{ pv_name }}
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+
+[vdo{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ share_disk }}
+names={{ pv_name }}
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+{% endif %}
 
 [pv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ ovirt_disk }}
+devices={{ ovirt_pv_name }}
 ignore_pv_errors=no
 
 [pv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ share_disk }}
+devices={{ share_pv_name }}
 ignore_pv_errors=no
 
 [vg{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-pvname={{ ovirt_disk }}
+pvname={{ ovirt_pv_name }}
 ignore_vg_errors=no
 
 [vg{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk2
-pvname={{ share_disk }}
+pvname={{ share_pv_name }}
 ignore_vg_errors=no
 
 [lv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
@@ -311,42 +358,86 @@ ignore_lv_errors=no
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
 # Note: we will use the first biggest for CTDB/share/backup
 {% set share_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
+{% set share_pv_name = hvp_use_vdo | ternary('vdo_' + share_disk, share_disk) %}
 # Note: we will use the last smallest for oVirt Engine and ISO
 {% set ovirt_other_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | min) | map(attribute='name') | list | sort | last %}
+{% set ovirt_other_pv_name = hvp_use_vdo | ternary('vdo_' + ovirt_other_disk, ovirt_other_disk) %}
 # Note: we will use the first remaining (excluding those already selected) for oVirt virtual machines
 {% set ovirt_vm_disk = suitable_disks | map(attribute='name') | difference([ ovirt_other_disk, share_disk ]) | list | sort | first %}
+{% set ovirt_vm_pv_name = hvp_use_vdo | ternary('vdo_' + ovirt_vm_disk, ovirt_vm_disk) %}
+
+{% if hvp_use_vdo %}
+[vdo{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ ovirt_other_disk }}
+names={{ ovirt_other_pv_name }}
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+
+[vdo{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ share_disk }}
+names={{ share_pv_name }}
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+
+[vdo{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ ovirt_vm_disk }}
+names={{ ovirt_vm_pv_name }}
+logicalsize={{ ((hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+{% endif %}
 
 [pv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ ovirt_other_disk }}
+devices={{ ovirt_other_pv_name }}
 ignore_pv_errors=no
 
 [pv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ share_disk }}
+devices={{ share_pv_name }}
 ignore_pv_errors=no
 
 [pv{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ ovirt_vm_disk }}
+devices={{ ovirt_vm_pv_name }}
 ignore_pv_errors=no
 
 [vg{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-pvname={{ ovirt_other_disk }}
+pvname={{ ovirt_other_pv_name }}
 ignore_vg_errors=no
 
 [vg{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk2
-pvname={{ share_disk }}
+pvname={{ share_pv_name }}
 ignore_vg_errors=no
 
 [vg{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk3
-pvname={{ ovirt_vm_disk }}
+pvname={{ ovirt_vm_pv_name }}
 ignore_vg_errors=no
 
 [lv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
@@ -472,16 +563,32 @@ ignore_lv_errors=no
 # Node {{ node_index }} setup
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
 {% set node_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
+{% set pv_name = hvp_use_vdo | ternary('vdo_' + node_disk, node_disk) %}
+
+{% if hvp_use_vdo %}
+[vdo{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ node_disk }}
+names={{ pv_name }}
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+{% endif %}
 
 [pv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ node_disk }}
+devices={{ pv_name }}
 ignore_pv_errors=no
 
 [vg{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-pvname={{ node_disk }}
+pvname={{ pv_name }}
 ignore_vg_errors=no
 
 [lv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
@@ -580,29 +687,59 @@ ignore_lv_errors=no
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
 # Note: we will use the biggest for CTDB/share/backup
 {% set share_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
+{% set share_pv_name = hvp_use_vdo | ternary('vdo_' + share_disk, share_disk) %}
 # Note: we will use the smallest for oVirt
 {% set ovirt_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | min) | map(attribute='name') | list | sort | last %}
+{% set ovirt_pv_name = hvp_use_vdo | ternary('vdo_' + ovirt_disk, ovirt_disk) %}
+
+{% if hvp_use_vdo %}
+[vdo{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ ovirt_disk }}
+names={{ pv_name }}
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+
+[vdo{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ share_disk }}
+names={{ pv_name }}
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+{% endif %}
 
 [pv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ ovirt_disk }}
+devices={{ ovirt_pv_name }}
 ignore_pv_errors=no
 
 [pv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ share_disk }}
+devices={{ share_pv_name }}
 ignore_pv_errors=no
 
 [vg{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-pvname={{ ovirt_disk }}
+pvname={{ ovirt_pv_name }}
 ignore_vg_errors=no
 
 [vg{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk2
-pvname={{ share_disk }}
+pvname={{ share_pv_name }}
 ignore_vg_errors=no
 
 [lv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
@@ -710,42 +847,86 @@ ignore_lv_errors=no
 {% set suitable_disks = hostvars[groups['glusternodes'][node_index]]['hvp_free_disks'] %}
 # Note: we will use the first biggest for CTDB/share/backup
 {% set share_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | max) | map(attribute='name') | list | sort | first %}
+{% set share_pv_name = hvp_use_vdo | ternary('vdo_' + share_disk, share_disk) %}
 # Note: we will use the last smallest for oVirt Engine and ISO
 {% set ovirt_other_disk = suitable_disks | selectattr('size', 'equalto', suitable_disks | map(attribute='size') | min) | map(attribute='name') | list | sort | last %}
+{% set ovirt_other_pv_name = hvp_use_vdo | ternary('vdo_' + ovirt_other_disk, ovirt_other_disk) %}
 # Note: we will use the first remaining (excluding those already selected) for oVirt virtual machines
 {% set ovirt_vm_disk = suitable_disks | map(attribute='name') | difference([ ovirt_other_disk, share_disk ]) | list | sort | first %}
+{% set ovirt_vm_pv_name = hvp_use_vdo | ternary('vdo_' + ovirt_vm_disk, ovirt_vm_disk) %}
+
+{% if hvp_use_vdo %}
+[vdo{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ ovirt_other_disk }}
+names={{ ovirt_other_pv_name }}
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+
+[vdo{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ share_disk }}
+names={{ share_pv_name }}
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+
+[vdo{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
+action=create
+devices={{ ovirt_vm_disk }}
+names={{ ovirt_vm_pv_name }}
+logicalsize={{ ((hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) * 1.2) | int }}G
+blockmapcachesize=128M
+readcache=enabled
+readcachesize=20M
+emulate512=enabled
+writepolicy=auto
+ignore_vdo_errors=no
+slabsize=32G
+{% endif %}
 
 [pv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ ovirt_other_disk }}
+devices={{ ovirt_other_pv_name }}
 ignore_pv_errors=no
 
 [pv{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ share_disk }}
+devices={{ share_pv_name }}
 ignore_pv_errors=no
 
 [pv{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
-devices={{ ovirt_vm_disk }}
+devices={{ ovirt_vm_pv_name }}
 ignore_pv_errors=no
 
 [vg{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk1
-pvname={{ ovirt_other_disk }}
+pvname={{ ovirt_other_pv_name }}
 ignore_vg_errors=no
 
 [vg{{ node_index }}2:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk2
-pvname={{ share_disk }}
+pvname={{ share_pv_name }}
 ignore_vg_errors=no
 
 [vg{{ node_index }}3:{{ groups['glusternodes'][node_index] }}]
 action=create
 vgname=vgdisk3
-pvname={{ ovirt_vm_disk }}
+pvname={{ ovirt_vm_pv_name }}
 ignore_vg_errors=no
 
 [lv{{ node_index }}1:{{ groups['glusternodes'][node_index] }}]
