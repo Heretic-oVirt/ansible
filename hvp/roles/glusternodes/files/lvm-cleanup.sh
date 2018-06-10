@@ -9,7 +9,7 @@ wait_cmd="udevadm settle --timeout=5"
 trigger_cmd="udevadm trigger --verbose"
 
 # Detect VDO availability
-if [ -n "$(which vdo)" ]; then
+if [ -n "$(which vdo 2>/dev/null)" ]; then
         has_vdo="true"
 else
         has_vdo="false"
