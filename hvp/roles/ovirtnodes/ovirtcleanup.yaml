@@ -26,8 +26,9 @@
       register: enginecleanup_result
     - name: Mount the Gluster volume intended for Self Hosted Engine
       command: "mount -t glusterfs localhost:/{{ hvp_enginedomain_volume_name }} /mnt"
+      args:
+        warn: no
       register: enginevolumemount_result
-      warn: false
     - name: Find entries inside the Gluster volume intended for Self Hosted Engine
       find:
         paths: "/mnt"

@@ -10,11 +10,10 @@
       with_items:
         - "../common/vars/hvp.yaml"
         - "../common/vars/ad.yaml"
-    - name: Choose an AD DC
-      # Note: AD DC identified by resolving the AD domain DNS name
-      set_vars:
-        chosen_ad_dc: "{{ lookup('dig', hvp_adjoin_domain, wantlist=True) | first }}"
     - name: Wait for full AD DC availability
+      # Note: AD DC identified by resolving the AD domain DNS name
+      vars:
+        chosen_ad_dc: "{{ lookup('dig', hvp_adjoin_domain, wantlist=True) | first }}"
       # Note: we wait for DNS, RPC, LDAP and Kerberos (password change) services to be listening on a DC
       wait_for:
         host: "{{ chosen_ad_dc }}"

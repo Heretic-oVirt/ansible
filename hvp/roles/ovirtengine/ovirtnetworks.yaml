@@ -12,15 +12,14 @@
     - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
-    - name: List OVN-related packages on Engine
-      set_vars:
+    - name: Install OVN-related packages on Engine
+      vars:
         hvp_ovn_engine_packages:
           - openvswitch
           - openvswitch-ovn-common
           - openvswitch-ovn-central
           - python-openvswitch
           - ovirt-provider-ovn
-    - name: Install OVN-related packages on Engine
       # TODO: lower log level in /etc/ovirt-provider-ovn/logger.conf
       yum:
         name: "{{ hvp_ovn_engine_packages }}"

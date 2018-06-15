@@ -20,7 +20,7 @@
         path: "{{ item }}"
         insertafter: EOF
         regexp: "^BONDING_OPTS="
-        line: "BONDING_OPTS=\"mode=802.3ad xmit_hash_policy=layer2+3 miimon=100\""
+        line: 'BONDING_OPTS="mode=802.3ad xmit_hash_policy=layer2+3 miimon=100"'
       with_fileglob:
         - "/etc/sysconfig/network-scripts/ifcfg-bond*"
     - include_tasks: ../common/tasks/poweroff.yaml

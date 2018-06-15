@@ -97,8 +97,8 @@
         state: latest
         update_cache: yes
         disablerepo: "ovirt-{{ compatibility_version }}"
-    - name: List HVP-recommended packages
-      set_vars:
+    - name: Install HVP-recommended packages
+      vars:
         hvp_generic_engine_packages:
           - abrt
           - abrt-addon-ccpp
@@ -147,12 +147,11 @@
           - libselinux-python
           - libsemanage-python
           - virtio-win
-    - name: Install HVP-recommended packages
       yum:
         name: "{{ hvp_generic_engine_packages }}"
         state: latest
-    - name: List Bareos-related packages
-      set_vars:
+    - name: Install Bareos-related packages
+      vars:
         hvp_bareos_engine_packages:
           - bareos-tools
           - bareos-client
@@ -160,7 +159,6 @@
           - bareos-database-postgresql
           - bareos-database-tools
           - bareos-webui
-    - name: Install Bareos-related packages
       yum:
         name: "{{ hvp_bareos_engine_packages }}"
         state: latest
@@ -228,7 +226,7 @@
         state: present
         path: /etc/default/grub
         backrefs: yes
-        regexp: '^(GRUB_CMDLINE_LINUX=(?!.*elevator)\"[^\"]+)(\".*)'
+        regexp: '^(GRUB_CMDLINE_LINUX=(?!.*elevator)"[^"]+)(".*)'
         line: '\1 elevator=deadline\2'
       register: kernelio_result
     - name: Update GRUB menu
@@ -437,7 +435,7 @@
         regexp: '^SENDMAILTO='
         line: "SENDMAILTO={{ hvp_email_receiver }}"
       register: logcheckconf_result
-    - Configure logcheck rules
+    - name: Configure logcheck rules
       file:
         path: "{{ item.path }}"
         state: link
