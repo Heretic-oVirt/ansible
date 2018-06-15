@@ -6,10 +6,7 @@
     - include_tasks: ../common/tasks/createkeys.yaml
     - name: Get common vars
       include_vars:
-        file: "{{ item }}"
-      with_items:
-        - "../common/vars/hvp.yaml"
-        - "../common/vars/ad.yaml"
+        file: "../common/vars/hvp.yaml"
     - name: Wait for full AD DC availability
       # Note: AD DC identified by resolving the AD domain DNS name
       vars:
@@ -34,10 +31,7 @@
     - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars
       include_vars:
-        file: "{{ item }}"
-      with_items:
-        - "../common/vars/hvp.yaml"
-        - "../common/vars/ad.yaml"
+        file: "../common/vars/hvp.yaml"
     - name: Prepare Samba domain-based user-mapping configuration file
       template:
         src: templates/smbusers-domain.j2

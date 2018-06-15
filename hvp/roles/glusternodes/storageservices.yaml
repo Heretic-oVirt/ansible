@@ -12,10 +12,7 @@
     - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars
       include_vars:
-        file: "{{ item }}"
-      with_items:
-        - "../common/vars/hvp.yaml"
-        - "../common/vars/ad.yaml"
+        file: "../common/vars/hvp.yaml"
 - name: Prepare Gluster-volume based share dirs for CIFS
   hosts: gluster_master
   remote_user: root

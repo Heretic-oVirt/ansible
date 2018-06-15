@@ -7,10 +7,7 @@
     - include_tasks: ../common/tasks/createkeys.yaml
     - name: Get common vars
       include_vars:
-        file: "{{ item }}"
-      with_items:
-        - "../common/vars/hvp.yaml"
-        - "../common/vars/ad.yaml"
+        file: "../common/vars/hvp.yaml"
     - name: Create random passwords for storage daemons on nodes
       set_fact:
         bareos_sd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
@@ -22,10 +19,7 @@
     - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars
       include_vars:
-        file: "{{ item }}"
-      with_items:
-        - "../common/vars/hvp.yaml"
-        - "../common/vars/ad.yaml"
+        file: "../common/vars/hvp.yaml"
     - name: Install Bareos-related packages on nodes
       vars:
         hvp_bareos_node_packages:
@@ -112,10 +106,7 @@
     - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars
       include_vars:
-        file: "{{ item }}"
-      with_items:
-        - "../common/vars/hvp.yaml"
-        - "../common/vars/ad.yaml"
+        file: "../common/vars/hvp.yaml"
     - name: Install Bareos-related packages on Engine
       vars:
         hvp_bareos_engine_packages:
