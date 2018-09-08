@@ -10,6 +10,8 @@ hvp_orthodox_mode: false
 hvp_ovirt_nightly_mode: false
 hvp_use_vdo: false
 hvp_master_node: "{{ groups['ovirt_master'] | first }}"
+# Note: workaround for hang on boot in nested kvm - remove when fixed upstream
+hvp_vm_machinetype: "{% if hostvars[hvp_master_node]['ansible_virtualization_role'] == 'guest' %}pc-i440fx-rhel7.2.0{% else %}pc{% endif %}"
 # TODO: dynamically determine proper values for Engine RAM/CPUs/imgsize
 hvp_engine_ram: 4096
 hvp_engine_cpus: 2
@@ -22,8 +24,8 @@ hvp_engine_netprefix: 24
 # TODO: derive the following by means of Ansible DNS lookup on ovirtnodes names
 hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
 # Note: generally, we try to use an independent pingable IP (central managed switch console interface) as "gateway" for oVirt setup
-# Note: we do not expect a virtualized setup to have an independent pingable IP apart from the default gateway
-hvp_switch_ip: "{% if hostvars[hvp_master_node]['ansible_virtualization_role'] == 'guest' %} 172.20.10.1 {% else %} 172.20.10.200 {% endif %}"
+# Note: in a virtualized setup without an independent pingable IP (apart from the default gateway) repeat the default gateway IP here
+hvp_switch_ip: 172.20.10.200
 # Note: generally, we keep a distinct proper gateway address on the management network only for network routing configuration
 hvp_gateway_ip: 172.20.10.1
 hvp_metrics_name: luna
@@ -118,7 +120,7 @@ cluster_name: "Default"
 # Note: ISO domain will be of type NFS while all others will be of type GlusterFS
 # Note: Engine vm has no access to Gluster network, so for ISO domain we must resort to NFS on management network (Engine must access it for image upload)
 glusterfs_addr: "{{ groups['gluster_master'] | first }}"
-glusterfs_mountopts: "backup-volfile-servers={{ groups['gluster_nonmaster_nodes'] | join(':') }},fetch-attempts=2,log-level=WARNING"
+glusterfs_mountopts: "{% if groups['glusternodes'] | length >= 3 %}backup-volfile-servers={{ groups['gluster_nonmaster_nodes'] | join(':') }},{% endif %}fetch-attempts=2,log-level=WARNING"
 iso_sd_type: nfs
 iso_sd_addr: "{{ hvp_storage_name }}.{{ hvp_management_domainname }}"
 iso_sd_name: "{{ hvp_isodomain_volume_name + '_domain' }}"
