@@ -1,0 +1,23 @@
+---
+# Ansible tasks file to create a single Gluster-block LUN inside a loop (with all parameters passed as outer_item elements)
+- name: Create iSCSI LUN
+  command: "gluster-block create {{ hvp_blockshare_volume_name }}/block{{ outer_item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ outer_item.1 }}"
+  register: createblock_result
+- name: Save iSCSI LUN username and password
+  vars:
+    username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
+    password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
+  blockinfile:
+    path: /root/etc/lun_credentials
+    state: present
+    create: yes
+    owner: root
+    group: root
+    mode: 0600
+    insertafter: EOF
+    marker: "# {mark} iSCSI LUN {{ outer_item.0 }} ANSIBLE MANAGED BLOCK"
+    block: |
+      LUN number: {{ item.0 }}
+      Username: {{ createblock_result.stdout | regex_search(username_regexp,'\\1') }}
+      Password: {{ createblock_result.stdout | regex_search(password_regexp,'\\1') }}
+...
