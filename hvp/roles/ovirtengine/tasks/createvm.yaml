@@ -2,6 +2,7 @@
 - name: Generate random MAC address for oVirt VM
   shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
   register: vmmac_result
+  delegate_to: "{{ hvp_master_node }}"
 - name: Create PXELinux configuration for oVirt VM
   template:
     src: templates/pxelinux-vm-cfg.j2
@@ -22,7 +23,7 @@
     high_availability: "{{ outer_item.vm_high_availability }}"
     memory: "{{ outer_item.vm_memory }}"
     cpu_cores: "{{ outer_item.vm_cpu_cores }}"
-    cpu_sockets: "{{ iten.vm_cpu_sockets }}"
+    cpu_sockets: "{{ outer_item.vm_cpu_sockets }}"
     cpu_shares: "{{ outer_item.vm_cpu_shares }}"
     type: "{{ outer_item.vm_type }}"
     operating_system: "{{ outer_item.vm_operating_system }}"
@@ -44,10 +45,11 @@
     auth: "{{ ovirt_auth }}"
     state: plugged
     name: "{{ outer_item.vm_name }}_nic"
-    vm_name: "{{ outer_item.vm_name }}"
+    vm: "{{ outer_item.vm_name }}"
     interface: virtio
     mac_address: "{{ vmmac_result.stdout }}"
     network: "{{ outer_item.vm_network_name }}"
+    profile: "{{ outer_item.vm_network_name }}"
     wait: true
 - name: Start oVirt VM
   ovirt_vms:
