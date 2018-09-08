@@ -10,13 +10,18 @@
 - name: Perform global oVirt operations through the Engine
   hosts: ovirtengine
   remote_user: root
+  # TODO: there is a visibility/syntax error on using the global variables - trying to work around here
+  pre_tasks:
+    - name: Gather facts from all hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      with_items: "{{ groups['ovirtnodes'] }}"
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
     - name: Get common vars from files
-      include_vars: "{{ item }}"
-      with_items:
-        - ../common/vars/hvp.yaml
-        - ../common/vars/vms.yaml
+      include_vars:
+        file: "../common/vars/hvp.yaml"
     - name: Obtain oVirt Engine SSO token
       no_log: true
       ovirt_auth:
