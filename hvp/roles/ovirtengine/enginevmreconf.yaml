@@ -23,32 +23,24 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Install YUM-related packages
-      yum:
-        name: "{{ item }}"
-        state: latest
-      with_items:
+      vars:
+        hvp_yum_related_packages:
         - yum-utils
         - yum-plugin-priorities
         - deltarpm
+      yum:
+        name: "{{ hvp_yum_related_packages }}"
+        state: latest
     - name: Enable CentOS CR repo
       command: yum-config-manager --enable cr
       register: enablecentoscr_result
     - name: Customize EPEL repo inclusions
-      shell: "sed -i -e 's/epel-release,/epel-release,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
+      # TODO: make the following either idempotent or cleanly repeatable
+      shell: "sed -i -e 's/epel-release,/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepoedit_result
     - name: Disable EPEL repo use of DNS-based balanced mirrors
       shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepodirect_result
-    - name: Add Psychotic release package
-      yum:
-        name: http://packages.psychotic.ninja/6/base/i386/RPMS/psychotic-release-1.0.0-1.el6.psychotic.noarch.rpm
-        state: latest
-    - name: Limit Psychotic repo included files
-      command: yum-config-manager --save --setopt='psychotic.include=unrar*'
-      register: limitpsychotic_result
-    - name: Enable Psychotic repo
-      command: yum-config-manager --enable psychotic
-      register: enablepsychotic_result
     - name: Add HVP release package
       yum:
         name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-3.noarch.rpm
@@ -132,7 +124,6 @@
           - hping3
           - p7zip
           - p7zip-plugins
-          - unrar
           - arj
           - pwgen
           - yum-cron
@@ -521,14 +512,6 @@
       command: newaliases
       register: newaliases_result
       when: aliases_result.changed
-    - name: Create missing pipe for Postfix
-      # TODO: it seems that a Postfix error gets regularly logged because of this missing pipe - remove when fixed upstream
-      command: "{{ item }}"
-      ignore_errors: yes
-      register: createpostfixfifo_result
-      with_items:
-        - mkfifo /var/spool/postfix/public/pickup
-        - chown postfix:postdrop /var/spool/postfix/public/pickup
     - name: Disable and stop unneeded services
       systemd:
         name: "{{ item }}"
@@ -546,6 +529,7 @@
       with_items:
         - firewalld
         - haveged
+        - postfix
     - name: Create oVirt-shell configuration file
       # TODO: check autoconnect - maybe unsupported because of oVirt-shell deprecation
       template:
@@ -614,16 +598,18 @@
         mode: 0644
         backup: no
     - name: Reconfigure Engine vm network interface
-      # TODO: add DNS servers if needed
       nmcli:
         ifname: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
         conn_name: "System {{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
         ip4: "{{ hvp_engine_ip }}/{{ hvp_engine_netprefix }}"
         gw4: "{{ hvp_gateway_ip }}"
+        dns4: "{{ hvp_engine_dnslist.split(',') }}"
         autoconnect: yes
         type: ethernet
         state: present
-    - include_tasks: ../common/tasks/reboot.yaml
+    - name: Reboot Engine vm
+      # TODO: only conditionally reboot machine depending on above actions results
+      include_tasks: ../common/tasks/reboot.yaml
 - name: Put oVirt Hosted Engine online
   hosts: ovirt_master
   remote_user: root
@@ -633,5 +619,4 @@
         ansible_ssh_pipelining: no
       command: hosted-engine --set-maintenance --mode=none
       register: exitglobalmaintenance_result
-
 ...
