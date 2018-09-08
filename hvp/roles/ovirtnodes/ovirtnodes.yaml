@@ -11,8 +11,16 @@
   remote_user: root
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Start libvirt to allow easy CPU inspection
+      systemd:
+        name: libvirtd
+        state: started
     - name: Gather CPU types
       hvp_cpu_type:
+    - name: Stop libvirt after CPU inspection
+      systemd:
+        name: libvirtd
+        state: stopped
 - name: Check CPU facts cluster-wide
   hosts: localhost
   tasks:
@@ -36,9 +44,27 @@
       when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether') or (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'bonding')
       with_items:
         - "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
+    - name: Fix VDSM runtime directory
+      # TODO: sometimes VDSM reconfiguration fails because of this - remove when fixed upstream
+      file:
+        path: /var/run/vdsm
+        state: directory
+        owner: vdsm
+        group: kvm
+        mode: 0755
     - name: Reset VDSM configuration
       command: vdsm-tool configure --force
       register: vdsm_result
+    - name: Fix for KVM-nested bug
+      # TODO: taken from https://gist.github.com/RabidCicada/40655db1582ca5d07c9bbf2c429cdd01 - remove when properly fixed upstream
+      copy:
+        src: ../common/files/51_nested_in_vmware
+        dest: /usr/libexec/vdsm/hooks/before_vm_start/51_nested_in_vmware
+        owner: root
+        group: root
+        mode: 0755
+        backup: no
+      when: hostvars[inventory_hostname]['ansible_virtualization_role'] == 'guest'
 - name: Perform oVirt Hosted Engine setup
   hosts: ovirt_master
   remote_user: root
@@ -47,6 +73,7 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Generate random MAC address for Engine appliance
+      # TODO: Engine complains since its own MAC address is outside of the allocated pool - find a workaround
       shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
       register: mac_result
     - name: Get Engine appliance ova filename
@@ -79,9 +106,13 @@
         name: dhcpd
         state: restarted
       delegate_to: localhost
+    - name: Ping gateway to avoid transient errors
+      command: "ping -c 10 {{ hvp_switch_ip }}"
+      ignore_errors: yes
     - name: Perform actual Hosted Engine setup
+      # TODO: disable the new Ansible-based setup of oVirt 4.2 - restore when properly tested
       vars:
         ansible_ssh_pipelining: no
-      command: hosted-engine --deploy --config-append=/root/etc/he-answers.conf
+      command: "hosted-engine --deploy {{ (compatibility_version == '4.2') | ternary('--noansible', '') }} --config-append=/root/etc/he-answers.conf"
       register: setup_result
 ...
