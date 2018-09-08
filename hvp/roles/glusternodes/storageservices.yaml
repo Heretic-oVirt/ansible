@@ -69,32 +69,11 @@
   hosts: gluster_master
   remote_user: root
   tasks:
-    - name: Create iSCSI LUNs
-      command: "gluster-block create {{ hvp_blockshare_volume_name }}/block{{ item.0 }} ha {{ groups['glusternodes'] | length }} auth enable {{ groups['glusternodes'] | join(',') }} {{ item.1 }}"
-      register: createblock_result
+    - name: Create all Gluster-block based LUNs
+      include_tasks: tasks/createlun.yaml
       with_indexed_items: "{{ hvp_lun_sizes }}"
-    - name: Extract iSCSI LUN usernames
-      set_fact: lun_usernames="{{ lun_usernames }} + [{{ createblock_result.results[item.0].stdout | regex_search(username_regexp,'\\1') }}]"
-      vars:
-        username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
-      with_indexed_items: "{{ createblock_result.results }}"
-    - name: Extract iSCSI LUN passwords
-      set_fact: lun_passwords="{{ lun_passwords }} + [{{ createblock_result.results[item.0].stdout | regex_search(password_regexp,'\\1') }}]"
-      vars:
-        password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
-      with_indexed_items: "{{ createblock_result.results }}"
-    - name: Save iSCSI LUN usernames/passwords
-      copy:
-        content: |
-          {% for username in lun_usernames %}
-          LUN number: {{ loop.index0 }}
-          Username: {{ lun_usernames[loop.index0] }}
-          Password: {{ lun_passwords[loop.index0] }}
-          
-          {% endfor %}
-        dest: /root/etc/lun_credentials
-        backup: yes
-      delegate_to: localhost
+      loop_control:
+        loop_var: outer_item
 - name: Configure and start CTDB/Samba
   hosts: glusternodes
   remote_user: root
