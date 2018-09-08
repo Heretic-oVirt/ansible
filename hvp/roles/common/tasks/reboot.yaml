@@ -11,5 +11,5 @@
     sleep: 5
     timeout: 300
     # Note: sometimes it seems that reboot results in poweroff instead
-    ignore_errors: true
+    ignore_errors: yes
 ...
