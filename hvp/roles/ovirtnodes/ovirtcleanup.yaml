@@ -42,9 +42,38 @@
         state: absent
         # Note: .trashcan and .trashcan/internal_op cannot be deleted, so we must ignore errors
       ignore_errors: yes
-      with_items: "{{ enginevolumeentries_result }}"
+      with_items: "{{ enginevolumeentries_result.files }}"
     - name: Unmount the Gluster volume intended for Self Hosted Engine
       command: "umount -l /mnt"
       register: enginevolumeumount_result
       warn: false
+    - name: Remove any leftover libvirt domains
+      shell: "for domain in $(virsh list --all --name); do virsh undefine ${domain} --remove-all-storage; done"
+      ignore_errors: yes
+    - name: Stop and disable oVirt-related services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      with_items:
+        - mom-vdsm
+        - momd
+        - ovirt-imageio-daemon
+        - supervdsmd
+        - vdsm-network-init
+        - vdsm-network
+        - vdsmd
+        - libvirt-guests
+        - libvirtd
+        - wdmd
+    - name: Remove any leftover bridge interfaces
+      # TODO: the following does not restore pre-ovirtmgmt network configuration - furthermore it seems that oVirt relies again on legacy network service instead of NetworkManager
+      nmcli:
+        conn_name: "{{ item }}"
+        state: absent
+      when: (hostvars[inventory_hostname]['ansible_' + item] is defined) and (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'bridge')
+      with_items:
+        - "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
+    - name: Reboot to clean up state
+      include_tasks: ../common/tasks/reboot.yaml
 ...
