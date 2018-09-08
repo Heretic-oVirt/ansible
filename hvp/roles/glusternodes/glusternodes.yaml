@@ -31,4 +31,24 @@
     - name: Perform actual gDeploy-based Gluster configuration
       command: gdeploy -k -vv -c "{{ playbook_dir }}/gdeploy.conf"
       register: gdeploy_result
+- name: Fix gluster nodes VDO configuration
+  # TODO: brick filesystem stacked on top of VDO fail on boot - remove when fixed upstream
+  hosts: glusternodes
+  remote_user: root
+  tasks:
+    - name: Get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Enable VDO service
+      systemd:
+        name: vdo
+        enabled: true
+      when: hvp_use_vdo
+    - name: Fix VDO-dependent mounts
+      replace:
+        path: /etc/fstab
+        regexp: '^(.*/gluster_bricks/.*xfs).*$'
+        replace: '\1 inode64,noatime,nodiratime,x-systemd.requires=vdo.service 0 0'
+      when: hvp_use_vdo
 ...
