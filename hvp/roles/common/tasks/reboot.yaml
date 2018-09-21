@@ -1,5 +1,5 @@
 ---
-# Ansible flat tasks file to be included in playbooks
+# Ansible flat tasks file to be imported in playbooks
 - name: Reboot host
   shell: nohup bash -c "sleep 20 && systemctl reboot" &
   async: 1
@@ -10,6 +10,4 @@
     delay: 50
     sleep: 5
     timeout: 300
-    # Note: sometimes it seems that reboot results in poweroff instead
-    ignore_errors: yes
 ...
