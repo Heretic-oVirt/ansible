@@ -77,4 +77,20 @@
       ovirt_auth:
         state: absent
         ovirt_auth: "{{ ovirt_auth }}"
+- name: Configure newly added nodes
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - name: Get common vars
+      include_vars:
+        file: ../common/vars/hvp.yaml
+    - name: Mask and stop dangerous or noisy services
+      systemd:
+        name: "{{ item }}"
+        masked: yes
+        state: stopped
+        no_block: no
+      with_items:
+        - yum-cron
+        - kdump
 ...
