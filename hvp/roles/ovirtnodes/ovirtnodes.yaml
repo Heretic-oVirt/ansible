@@ -41,7 +41,7 @@
       # Note: eth interfaces enumeration taken from https://serverfault.com/a/852093
       set_fact:
         ansible_eth: "{% set ansible_eth = ansible_eth|default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ ansible_eth|list }}"
-      when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether') or (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'bonding')
+      when: (hostvars[inventory_hostname]['ansible_' + item] is defined) and ((hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether') or (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'bonding'))
       with_items:
         - "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
     - name: Fix VDSM runtime directory
@@ -58,7 +58,7 @@
     - name: Fix for KVM-nested bug
       # TODO: taken from https://gist.github.com/RabidCicada/40655db1582ca5d07c9bbf2c429cdd01 - remove when properly fixed upstream
       copy:
-        src: ../common/files/51_nested_in_vmware
+        src: files/51_nested_in_vmware
         dest: /usr/libexec/vdsm/hooks/before_vm_start/51_nested_in_vmware
         owner: root
         group: root
@@ -110,7 +110,7 @@
       command: "ping -c 10 {{ hvp_switch_ip }}"
       ignore_errors: yes
     - name: Perform actual Hosted Engine setup
-      # TODO: disable the new Ansible-based setup of oVirt 4.2 - restore when properly tested
+      # TODO: disable the new Ansible-based setup of oVirt 4.2 - restore when properly tested in our setup
       vars:
         ansible_ssh_pipelining: no
       command: "hosted-engine --deploy {{ (compatibility_version == '4.2') | ternary('--noansible', '') }} --config-append=/root/etc/he-answers.conf"
