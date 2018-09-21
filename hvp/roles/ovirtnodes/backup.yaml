@@ -10,8 +10,8 @@
         file: "../common/vars/hvp.yaml"
     - name: Create random passwords for storage daemons on nodes
       set_fact:
-        bareos_sd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_sd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
+        bareos_sd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
+        bareos_sd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
 - name: Install and configure Bareos on oVirt nodes
   hosts: ovirtnodes
   remote_user: root
@@ -39,8 +39,8 @@
         - "find /etc/bareos -type f -name '*.rpmsave' -exec rm -f '{}' ';'"
     - name: Create random passwords for file daemons on nodes
       set_fact:
-        bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
+        bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
+        bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
     - name: Copy Gluster plugins configuration template files on oVirt nodes
       copy:
         src: "{{ item.src }}"
@@ -138,12 +138,12 @@
         no_block: no
     - name: Create random passwords for file and director daemons on Engine
       set_fact:
-        bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_dir_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_dir_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_dir_db_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits encrypt=no') }}"
-        bareos_webui_admin_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits encrypt=no') }}"
+        bareos_fd_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
+        bareos_fd_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
+        bareos_dir_dir_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
+        bareos_dir_mon_password: "{{ lookup('password', '/dev/null length=45 chars=ascii_letters,digits') }}"
+        bareos_dir_db_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+        bareos_webui_admin_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
     - name: Set parameters in configuration files on Engine
       # TODO: find if/where to set the director monitoring password
       # TODO: add jobdefs for restore jobs
