@@ -3,6 +3,7 @@
 host {{ hvp_engine_name }} {
 	hardware ethernet {{ mac_result.stdout }};
 	fixed-address {{ hvp_engine_ip }};
+	option domain-name-servers {{ hvp_engine_dnslist | regex_replace(',', ', ') }};
 }
 
 # END ANSIBLE MANAGED BLOCK {{ hvp_engine_name }}
