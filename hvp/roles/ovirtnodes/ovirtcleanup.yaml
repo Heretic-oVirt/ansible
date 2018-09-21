@@ -75,5 +75,5 @@
       with_items:
         - "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
     - name: Reboot to clean up state
-      include_tasks: ../common/tasks/reboot.yaml
+      import_tasks: ../common/tasks/reboot.yaml
 ...
