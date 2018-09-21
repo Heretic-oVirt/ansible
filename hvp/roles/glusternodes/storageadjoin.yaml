@@ -7,23 +7,6 @@
     - name: Get common vars
       include_vars:
         file: "../common/vars/hvp.yaml"
-    - name: Wait for full AD DC availability
-      # Note: AD DC identified by resolving the AD domain DNS name
-      vars:
-        chosen_ad_dc: "{{ lookup('dig', hvp_adjoin_domain, wantlist=True) | first }}"
-      # Note: we wait for DNS, RPC, LDAP and Kerberos (password change) services to be listening on a DC
-      wait_for:
-        host: "{{ chosen_ad_dc }}"
-        port: "{{ item }}"
-        state: started
-        delay: 0
-        sleep: 30
-        timeout: 300
-      with_items:
-        - 53
-        - 135
-        - 389
-        - 464
 - name: Perform Samba AD configuration
   hosts: glusternodes
   remote_user: root
@@ -53,9 +36,25 @@
   hosts: gluster_master
   remote_user: root
   tasks:
+    - name: Wait for full AD DC availability
+      # Note: we use the domain name as a shortcut to point to a domain controller
+      # Note: we wait for DNS, RPC, LDAP and Kerberos (password change) services to be listening on a DC
+      # TODO: we should wait for actual user/OU availability (needed by the join below)
+      wait_for:
+        host: "{{ hvp_adjoin_domain }}"
+        port: "{{ item }}"
+        state: started
+        delay: 60
+        sleep: 30
+        timeout: 300
+      with_items:
+        - 53
+        - 135
+        - 389
+        - 464
     - name: Obtain Kerberos ticket
       shell: |
-        set timeout 300
+        set timeout 10
         spawn kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}
         match_max 100000
         expect -re -nocase "password for.*:.*$"
@@ -64,24 +63,21 @@
       args:
         executable: /usr/bin/expect
     - name: Join AD domain
-      # TODO: use the AD DC identified above to perform AD joining
       shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createcomputer="File Servers"
       register: join_result
     - name: Add further Kerberos SPNs
+      # TODO: either move the keytab in a shared area or replicate it on all nodes
+      # TODO: find a way to keep it up-to-date
+      # Note: the keytab mainly is needed by NFS-Ganesha for kerberized NFSv4 serving
       shell: "net ads keytab add {{ item }} -k"
       register: addspn_result
       with_items:
         - cifs
         - nfs
-    - name: Extract cluster keytab
-      # TODO: either move the keytab in a shared area or replicate it on all nodes
-      # TODO: find a way to keep it up-to-date
-      # Note: the keytab mainly is needed by NFS-Ganesha for kerberized NFSv4 serving
-      shell: net ads keytab create -k
-      register: keytabcreate_result
-    - name: Grant disk administration privileges to Domain Admins
-      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\\Domain Admins' SeDiskOperatorPrivilege -k"
-      register: diskprivilegegrant_result
+#    - name: Grant disk administration privileges to Domain Admins
+#      # TODO: the following does not find the specified identity - find out why and correct
+#      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\\Domain Admins' SeDiskOperatorPrivilege -k"
+#      register: diskprivilegegrant_result
     - name: Remove Kerberos ticket
       command: kdestroy
       register: kdestroy_result
