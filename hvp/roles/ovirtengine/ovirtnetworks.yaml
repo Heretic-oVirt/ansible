@@ -172,6 +172,7 @@
             version: "v4"
         check: true
         wait: true
+        save: true
       when: got_gluster_network
       with_items: "{{ groups['ovirtnodes'] }}"
     - name: Qualify Management network when LAN network is absent
@@ -240,6 +241,7 @@
             version: "v4"
         check: true
         wait: true
+        save: true
       when: got_internal_network
       with_items: "{{ groups['ovirtnodes'] }}"
     - name: Revoke the SSO token
