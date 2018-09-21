@@ -32,7 +32,7 @@
       command: gdeploy -k -vv -c "{{ playbook_dir }}/gdeploy.conf"
       register: gdeploy_result
 - name: Fix gluster nodes VDO configuration
-  # TODO: brick filesystem stacked on top of VDO fail on boot - remove when fixed upstream
+  # TODO: brick filesystem stacked on top of VDO fail on boot - https://bugzilla.redhat.com/show_bug.cgi?id=1624578 - remove when fixed upstream
   hosts: glusternodes
   remote_user: root
   tasks:
@@ -49,6 +49,6 @@
       replace:
         path: /etc/fstab
         regexp: '^(.*/gluster_bricks/.*xfs).*$'
-        replace: '\1 inode64,noatime,nodiratime,x-systemd.requires=vdo.service 0 0'
+        replace: '\1 inode64,noatime,nodiratime,x-systemd.requires=vdo.service,_netdev 0 0'
       when: hvp_use_vdo
 ...
