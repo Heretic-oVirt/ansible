@@ -5,7 +5,7 @@
    workgroup = {{ hvp_netbios_domainname }}
    realm = {{ hvp_adjoin_realm }}
    security = ads
-   kerberos method = secrets only
+   kerberos method = secrets and keytab
    bind interfaces only = no
    clustering = yes
    ctdbd socket = /run/ctdb/ctdbd.socket
