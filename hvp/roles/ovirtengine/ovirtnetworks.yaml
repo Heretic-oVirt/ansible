@@ -211,6 +211,7 @@
             version: "v4"
         check: true
         wait: true
+        save: true
       when: got_lan_network
       with_items: "{{ groups['ovirtnodes'] }}"
     - name: Add Internal network
