@@ -43,7 +43,7 @@
       register: epelrepodirect_result
     - name: Add HVP release package
       yum:
-        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-3.noarch.rpm
+        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-4.noarch.rpm
         state: latest
     - name: Enable HVP RHV repo
       command: yum-config-manager --enable hvp-rhv-rebuild
@@ -153,6 +153,15 @@
       yum:
         name: "{{ hvp_bareos_engine_packages }}"
         state: latest
+    - name: Disable Bareos-related services until we configure them
+      systemd:
+        name: "{{ item }}"
+        enabled: false
+        state: stopped
+        no_block: no
+      with_items:
+        - bareos-dir
+        - bareos-fd
     - name: Cleanup rpm leftovers
       command: "{{ item }}"
       register: cleanupleftovers_result
@@ -512,14 +521,15 @@
       command: newaliases
       register: newaliases_result
       when: aliases_result.changed
-    - name: Disable and stop unneeded services
+    - name: Mask and stop dangerous or noisy services
       systemd:
         name: "{{ item }}"
-        enabled: false
+        masked: yes
         state: stopped
         no_block: no
       with_items:
         - yum-cron
+        - kdump
     - name: Enable and start needed services
       systemd:
         name: "{{ item }}"
@@ -607,9 +617,31 @@
         autoconnect: yes
         type: ethernet
         state: present
+    - name: Make sure Engine vm network interface is no more in DHCP mode
+      # TODO: workaround for nmcli module shortcomings - https://github.com/ansible/ansible/issues/36615 - remove when fixed upstream
+      command: "{{ item }}"
+      with_items:
+        - 'nmcli con mod "System {{ hostvars[inventory_hostname]["ansible_default_ipv4"]["interface"] }}" ipv4.method manual'
+        - 'nmcli con reload'
+        - 'nmcli con up "System {{ hostvars[inventory_hostname]["ansible_default_ipv4"]["interface"] }}"'
+    - name: Disable all cloud-init related services
+      systemd:
+        name: "{{ item }}"
+        masked: yes
+        state: stopped
+      with_items:
+        - cloud-init.service
+        - cloud-init-local.service
+        - cloud-config.service
+        - cloud-config.target
+        - cloud-final.service
+        - network.service
     - name: Reboot Engine vm
       # TODO: only conditionally reboot machine depending on above actions results
-      include_tasks: ../common/tasks/reboot.yaml
+      # TODO: reboot results in spurious poweroff - ignoring errors as workaround - remove when fixed upstream
+      import_tasks: ../common/tasks/reboot.yaml
+      ignore_errors: yes
+      register: enginereboot_result
 - name: Put oVirt Hosted Engine online
   hosts: ovirt_master
   remote_user: root
@@ -619,4 +651,14 @@
         ansible_ssh_pipelining: no
       command: hosted-engine --set-maintenance --mode=none
       register: exitglobalmaintenance_result
+    - name: Wait for Engine vm to come back if rebooting failed above
+      # TODO: should wait for Engine actually up by checking its status
+      wait_for:
+        host: "{{ groups['ovirtengine'] | first }}"
+        port: 22
+        state: started
+        connect_timeout: 30
+        delay: 300
+        sleep: 30
+        timeout: 600
 ...
