@@ -29,6 +29,6 @@ Please note that further (specific) TODO lines still exist inside single YAML/Ji
 
 * in roles/glusternodes/templates/smb.j2: lower log level to 0 general and vfs-glusterfs too
 
-* in roles/glusternodes/storageadjoin.yaml: add nfs principal and extract/propagate keytab for kerberized NFSv4 Ganesha operations when ready
+* in roles/glusternodes/storageadjoin.yaml: extract/propagate keytab for kerberized NFSv4 Ganesha operations when ready
 
 
