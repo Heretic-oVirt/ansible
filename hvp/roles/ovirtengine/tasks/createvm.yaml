@@ -1,16 +1,4 @@
 # Ansible tasks file to create a single oVirt VM inside a loop (with all parameters passed as outer_item elements)
-- name: Generate random MAC address for oVirt VM
-  shell: echo 'from ovirt_hosted_engine_setup import util as ohostedutil; print ohostedutil.randomMAC()' | python
-  register: vmmac_result
-  delegate_to: "{{ hvp_master_node }}"
-- name: Create PXELinux configuration for oVirt VM
-  template:
-    src: templates/pxelinux-vm-cfg.j2
-    dest: "/var/lib/tftpboot/pxelinux.cfg/01-{{ vmmac_result.stdout | regex_replace(':', '-') }}"
-    owner: root
-    group: root
-    mode: 0644
-  delegate_to: localhost
 - name: Create oVirt VM
   ovirt_vms:
     auth: "{{ ovirt_auth }}"
@@ -47,10 +35,32 @@
     name: "{{ outer_item.vm_name }}_nic"
     vm: "{{ outer_item.vm_name }}"
     interface: virtio
-    mac_address: "{{ vmmac_result.stdout }}"
     network: "{{ outer_item.vm_network_name }}"
     profile: "{{ outer_item.vm_network_name }}"
     wait: true
+  register: vmnic_result
+- name: Create DHCPd configuration for oVirt VM
+  blockinfile:
+    path: /etc/dhcp/dhcpd-custom-pxe.conf
+    state: present
+    create: yes
+    owner: root
+    group: root
+    mode: 0644
+    insertafter: EOF
+    marker: "# {mark} PXE INSTALL for VM {{ vmnic_result.nic.mac.address | upper }} ANSIBLE MANAGED BLOCK"
+    block: |
+      if substring (hardware, 1, 6) = {{ vmnic_result.nic.mac.address | upper }} {
+        option pxelinux.configfile "pxelinux.cfg/{{ outer_item.vm_kickstart_file | regex_replace('^hvp-([^-]*)-.*$', '\1') }}.cfg";
+      }
+  register: dhcpdreconf_result
+  delegate_to: localhost
+- name: Restart DHCPd to apply reconfiguration
+  systemd:
+    name: dhcpd
+    state: restarted
+  when: dhcpdreconf_result.changed
+  delegate_to: localhost
 - name: Start oVirt VM
   ovirt_vms:
     auth: "{{ ovirt_auth }}"
@@ -69,4 +79,5 @@
     connect_timeout: 30
     delay: 600
     sleep: 90
-    timeout: 1800
+    timeout: 3600
+  delegate_to: localhost
