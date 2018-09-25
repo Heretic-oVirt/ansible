@@ -22,6 +22,18 @@
     - name: Get common vars
       include_vars:
         file: ../common/vars/hvp.yaml
+    - name: Check UEFI presence
+      stat:
+        path: "/sys/firmware/efi"
+      register: uefipresence_result
+    - name: Set UEFI/BIOS facts
+      set_fact:
+        grub_cfg_file: "{{ uefipresence_result.stat.exists | ternary('/etc/grub2-efi.cfg','/etc/grub2.cfg') }}"
+        grub_files_dir: "{{ uefipresence_result.stat.exists | ternary('/boot/efi/EFI/redhat','/boot/grub2') }}"
+    - name: Perform a preliminary configuration backup
+      command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
+      args:
+        creates: "/root/{{ ansible_nodename }}-original-conf.tar.gz"
     - name: Install YUM-related packages
       vars:
         hvp_yum_related_packages:
@@ -230,8 +242,7 @@
         line: '\1 elevator=deadline\2'
       register: kernelio_result
     - name: Update GRUB menu
-      # TODO: check path validity in case of EFI machine
-      command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      command: "grub2-mkconfig -o {{ grub_cfg_file }}"
       register: updategrubmenu_result
       when: kernelio_result.changed
     - name: Disable Ctrl-Alt-Del
@@ -300,10 +311,10 @@
         - { regexp: '^UseDNS', line: 'UseDNS no' }
         - { regexp: '^Banner', line: 'Banner /etc/issue.net' }
     - name: Restart OpenSSH to apply configuration
-      # TODO: should restart only if at least one in the registered values above is sshdconf_result.results[*].changed
       systemd:
         name: sshd
         state: restarted
+      when: sshdconf_result.changed
     - name: Configure use of at/cron facilities
       copy:
         content: |
@@ -378,10 +389,10 @@
         - { path: '/etc/httpd/conf.d/ssl.conf', before: 'BOF', regexp: '^SSLProtocol', line: 'SSLProtocol all -SSLv2 -SSLv3' }
         - { path: '/etc/httpd/conf.d/ssl.conf', before: '^SSLProtocol', regexp: '^SSLCipherSuite', line: 'SSLCipherSuite ALL:!EXP:!NULL:!ADH:!LOW:!RC4' }
     - name: Restart Apache to apply configuration
-      # TODO: should restart only if at least one in the registered values above is apacheconf_result.results[*].changed
       systemd:
         name: httpd
         state: restarted
+      when: apacheconf_result.changed
     - name: Add virtual-guest-specific udev rules for QEMU block devices
       copy:
         src: ../common/files/99-qemu-block-timeout.rules
@@ -451,8 +462,8 @@
       lineinfile:
         state: present
         path: /etc/logrotate.d/syslog
-        insertafter: '^[[:space:]]*missingok'
-        regexp: '^[[:space:]]*create 0640 root adm'
+        insertafter: '^[\s]*missingok'
+        regexp: '^[\s]*create 0640 root adm'
         line: '    create 0640 root adm'
       register: logrotatelogcheckcompat_result
     - name: Reconfigure log files for logcheck compliance
@@ -495,7 +506,7 @@
       when: auditconf_result.changed
 # TODO: ensure proper general firewalld configuration
     - name: Configure firewalld to log all denied connections
-      # TODO: disable for production use
+      # TODO: disable for production use (or ensure proper DOS protection)
       command: "{{ item }}"
       register: firewalldlogall_result
       with_items:
@@ -652,7 +663,7 @@
       command: hosted-engine --set-maintenance --mode=none
       register: exitglobalmaintenance_result
     - name: Wait for Engine vm to come back if rebooting failed above
-      # TODO: should wait for Engine actually up by checking its status
+      # TODO: should wait for Engine liveliness by checking its status on a node
       wait_for:
         host: "{{ groups['ovirtengine'] | first }}"
         port: 22
