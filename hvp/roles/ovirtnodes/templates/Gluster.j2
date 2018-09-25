@@ -2,7 +2,7 @@
 Storage {
   Name = Gluster
   Address = {{ hvp_storage_name }}.{{ hvp_lan_domainname }}                # N.B. Use a fully qualified name here (do not use "localhost" here).
-  Password = "{{ bareos_sd_dir_password }}"
+  Password = "{{ hostvars['localhost']['bareos_sd_dir_password'] }}"
   Device = GlusterStorage
   Media Type = GlusterFile
 }
