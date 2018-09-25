@@ -1,4 +1,12 @@
+---
 # Ansible tasks file to create a single oVirt VM inside a loop (with all parameters passed as outer_item elements)
+- name: Obtain oVirt Engine SSO token
+  no_log: true
+  ovirt_auth:
+    url: "{{ url }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+    ca_file: "{{ ca_file }}"
 - name: Create oVirt VM
   ovirt_vms:
     auth: "{{ ovirt_auth }}"
@@ -71,6 +79,11 @@
       - hd
       - network
     wait: true
+- name: Revoke the SSO token
+  no_log: true
+  ovirt_auth:
+    state: absent
+    ovirt_auth: "{{ ovirt_auth }}"
 - name: Wait for VM specific service port availability
   wait_for:
     host: "{{ outer_item.vm_service_ip }}"
@@ -81,3 +94,4 @@
     sleep: 90
     timeout: 3600
   delegate_to: localhost
+...
