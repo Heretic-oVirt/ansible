@@ -61,20 +61,20 @@
         line: "{{ item.line }}"
       register: setnodesbareosparameters_result
       with_items:
-        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: '\1Name = {{ ansible_hostname }}-fd' }
-        - { path: "/etc/bareos/bareos-fd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_dir_password''] }}"' }
-        - { path: "/etc/bareos/bareos-fd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_mon_password''] }}"' }
-        - { path: "/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_mon_password''] }}"' }
-        - { path: "/etc/bareos/bareos-sd.d/storage/bareos-sd.conf", regexp: "^([[:space:]]*)Name", line: '\1Name = {{ ansible_hostname }}-sd\n\1Heartbeat Interval = 1 min' }
-        - { path: "/etc/bareos/bareos-sd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[''localhost''][''bareos_sd_dir_password''] }}"' }
-        - { path: "/etc/bareos/bareos-sd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[''localhost''][''bareos_sd_mon_password'']] }}"' }
-        - { path: "/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[''localhost''][''bareos_sd_mon_password''] }}"' }
-        - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Device Options", line: '\1Device Options = "uri=gluster://localhost/{{ hvp_backup_volume_name }}/bareos"' }
-        - { path: "/etc/bareos/bareos-sd.d/device/GlusterStorage.conf", regexp: "^([[:space:]]*)Name", line: '\1Name = GlusterStorage' }
-        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)(Address.*)$", line: '\1# \2' }
-        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[''localhost''][''bareos_sd_dir_password''] }}"' }
-        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Name", line: '\1Name = "Gluster"' }
-        - { path: "/etc/bareos/bareos-dir.d/storage/Gluster.conf", regexp: "^([[:space:]]*)Device", line: '\1Device = "GlusterStorage"' }
+        - { path: '/etc/bareos/bareos-fd.d/client/myself.conf', regexp: '^([\s]*)Name', line: '\1Name = {{ ansible_hostname }}-fd' }
+        - { path: '/etc/bareos/bareos-fd.d/director/bareos-dir.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_dir_password"] }}' }
+        - { path: '/etc/bareos/bareos-fd.d/director/bareos-mon.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_mon_password"] }}' }
+        - { path: '/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_mon_password"] }}' }
+        - { path: '/etc/bareos/bareos-sd.d/storage/bareos-sd.conf', regexp: '^([\s]*)Name', line: '\1Name = {{ ansible_hostname }}-sd\n\1Heartbeat Interval = 1 min' }
+        - { path: '/etc/bareos/bareos-sd.d/director/bareos-dir.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars["localhost"]["bareos_sd_dir_password"] }}' }
+        - { path: '/etc/bareos/bareos-sd.d/director/bareos-mon.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars["localhost"]["bareos_sd_mon_password"] }}' }
+        - { path: '/etc/bareos/tray-monitor.d/storage/StorageDaemon-local.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars["localhost"]["bareos_sd_mon_password"] }}' }
+        - { path: '/etc/bareos/bareos-sd.d/device/GlusterStorage.conf', regexp: '^([\s]*)Device Options', line: '\1Device Options = "uri=gluster://localhost/{{ hvp_backup_volume_name }}/bareos"' }
+        - { path: '/etc/bareos/bareos-sd.d/device/GlusterStorage.conf', regexp: '^([\s]*)Name', line: '\1Name = GlusterStorage' }
+        - { path: '/etc/bareos/bareos-dir.d/storage/Gluster.conf', regexp: '^([\s]*)(Address.*)$', line: '\1# \2' }
+        - { path: '/etc/bareos/bareos-dir.d/storage/Gluster.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars["localhost"]["bareos_sd_dir_password"] }}' }
+        - { path: '/etc/bareos/bareos-dir.d/storage/Gluster.conf', regexp: '^([\s]*)Name', line: '\1Name = "Gluster"' }
+        - { path: '/etc/bareos/bareos-dir.d/storage/Gluster.conf', regexp: '^([\s]*)Device', line: '\1Device = "GlusterStorage"' }
 - name: Prepare Gluster-volume based dirs for Backup
   hosts: ovirt_master
   remote_user: root
@@ -108,12 +108,14 @@
       include_vars:
         file: "../common/vars/hvp.yaml"
     - name: Install Bareos-related packages on Engine
+      # Note: PostgreSQL on Engine is installed from SCL - using standard utilities from base
       vars:
         hvp_bareos_engine_packages:
           - bareos-tools
           - bareos-client
           - bareos-director
           - bareos-database-postgresql
+          - postgresql
           - bareos-database-tools
           - bareos-webui
       yum:
@@ -162,18 +164,18 @@
         line: "{{ item.line }}"
       register: setenginebareosparameters_result
       with_items:
-        - { path: "/etc/bareos/bareos-fd.d/client/myself.conf", regexp: "^([[:space:]]*)Name", line: '\1Name = bareos-fd' }
-        - { path: "/etc/bareos/bareos-fd.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_dir_password''] }}"' }
-        - { path: "/etc/bareos/bareos-fd.d/director/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_mon_password''] }}"' }
-        - { path: "/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_mon_password''] }}"' }
-        - { path: "/etc/bareos/bareos-dir.d/client/bareos-fd.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_fd_dir_password''] }}"\n\1Heartbeat Interval = 1 min' }
-        - { path: "/etc/bareos/bareos-dir.d/job/backup-bareos-fd.conf", regexp: "^([[:space:]]*)JobDefs", line: '\1JobDefs = "LinuxDefaultJob"' }
-        - { path: "/etc/bareos/bareos-dir.d/job/BackupCatalog.conf", regexp: "^([[:space:]]*)(Schedule.*)$", line: '\1# \2' }
-        - { path: "/etc/bareos/bareos-dir.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_dir_dir_password''] }}"' }
-        - { path: "/etc/bareos/bareos-dir.d/director/bareos-dir.conf", regexp: "^([[:space:]]*)#*[[:space:]]*Heartbeat Interval[[:space:]]*=", line: '\1Heartbeat Interval = 1 min' }
-        - { path: "/etc/bareos/bareos-dir.d/console/bareos-mon.conf", regexp: "^([[:space:]]*)Password", line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_dir_mon_password''] }}"' }
-        - { path: "/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf", regexp: "^([[:space:]]*)dbdriver", line: '\1dbdriver = "postgresql"' }
-        - { path: "/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf", regexp: "^([[:space:]]*)dbpassword", line: '\1dbpassword = "{{ hostvars[inventory_hostname][''bareos_dir_db_password''] }}"' }
+        - { path: '/etc/bareos/bareos-fd.d/client/myself.conf', regexp: '^([\s]*)Name', line: '\1Name = bareos-fd' }
+        - { path: '/etc/bareos/bareos-fd.d/director/bareos-dir.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_dir_password"] }}' }
+        - { path: '/etc/bareos/bareos-fd.d/director/bareos-mon.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_mon_password"] }}' }
+        - { path: '/etc/bareos/tray-monitor.d/client/FileDaemon-local.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_mon_password"] }}' }
+        - { path: '/etc/bareos/bareos-dir.d/client/bareos-fd.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_fd_dir_password"] }}\n\1Heartbeat Interval = 1 min' }
+        - { path: '/etc/bareos/bareos-dir.d/job/backup-bareos-fd.conf', regexp: '^([\s]*)JobDefs', line: '\1JobDefs = "LinuxDefaultJob"' }
+        - { path: '/etc/bareos/bareos-dir.d/job/BackupCatalog.conf', regexp: '^([\s]*)(Schedule.*)$', line: '\1# \2' }
+        - { path: '/etc/bareos/bareos-dir.d/director/bareos-dir.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_dir_dir_password"] }}' }
+        - { path: '/etc/bareos/bareos-dir.d/director/bareos-dir.conf', regexp: '^([\s]*)#*[\s]*Heartbeat Interval[\s]*=', line: '\1Heartbeat Interval = 1 min' }
+        - { path: '/etc/bareos/bareos-dir.d/console/bareos-mon.conf', regexp: '^([\s]*)Password', line: '\1Password = {{ hostvars[inventory_hostname]["bareos_dir_mon_password"] }}' }
+        - { path: '/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf', regexp: '^([\s]*)dbdriver', line: '\1dbdriver = "postgresql"' }
+        - { path: '/etc/bareos/bareos-dir.d/catalog/MyCatalog.conf', regexp: '^([\s]*)dbpassword', line: '\1dbpassword = {{ hostvars[inventory_hostname]["bareos_dir_db_password"] }}' }
     - name: Create a client configuration file for each oVirt node on Engine
       template:
         src: templates/node-fd.j2
@@ -239,10 +241,12 @@
         state: present
         path: "/etc/bareos/bareos-dir.d/console/admin.conf"
         backrefs: yes
-        regexp: '^([[:space:]]*)Password'
-        line: '\1Password = "{{ hostvars[inventory_hostname][''bareos_webui_admin_password''] }}"'
+        regexp: '^([\s]*)Password'
+        line: '\1Password = {{ hostvars[inventory_hostname]["bareos_webui_admin_password"] }}'
       register: setwebuiadminpassword_result
     - name: Setup Bareos DB using embedded PostgreSQL on Engine
+      # Note: the following will reinitialize Bareos DB from scratch each time (ignoring errors)
+      # TODO: find a way to detect a working/complete DB and skip this task
       command: "{{ item }}"
       ignore_errors: yes
       register: setupbareosdb_result
