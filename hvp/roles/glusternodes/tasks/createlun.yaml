@@ -5,8 +5,8 @@
   register: createblock_result
 - name: Save iSCSI LUN username and password
   vars:
-    username_regexp: '^USERNAME:[[:space:]]*([^[:space:]]+)'
-    password_regexp: '^PASSWORD:[[:space:]]*([^[:space:]]+)'
+    username_regexp: '^USERNAME:[\s]*([^\s]+)'
+    password_regexp: '^PASSWORD:[\s]*([^\s]+)'
   blockinfile:
     path: /root/etc/lun_credentials
     state: present
