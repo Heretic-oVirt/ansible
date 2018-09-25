@@ -1,7 +1,7 @@
 # gDeploy Gluster configuration file for HVP
 
 # Nodes in the trusted pool
-# TODO: dynamically choose the weakest node (less disk space / slower CPU) as the arbiter-only node (listed last) when we have more than 3 nodes
+# TODO: dynamically choose the weakest node (less disk space / slower CPU) as the arbiter-only node (listed last)
 [hosts]
 {% for host in groups['glusternodes'] %}
 {{ host }}
@@ -1252,7 +1252,7 @@ replica_count=3
 {% if groups['glusternodes'] | length == 3 %}arbiter_count=1{% endif %}
 
 force=yes
-# TODO: use NFS-Ganesha as soon as it is available - using internal Gluster-NFS meanwhile
+# TODO: use NFS-Ganesha as soon as a suitable CTDB-based setup has been devised - using internal Gluster-NFS meanwhile
 
 {% if groups['glusternodes'] | length == 1 %}
 # Note: single node does not support cluster.shd-max-threads (part of group virt settings, so that must be avoided too)
