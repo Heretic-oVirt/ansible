@@ -22,22 +22,10 @@
     - name: Get common vars from files
       include_vars:
         file: "../common/vars/hvp.yaml"
-    - name: Obtain oVirt Engine SSO token
-      no_log: true
-      ovirt_auth:
-        url: "{{ url }}"
-        username: "{{ username }}"
-        password: "{{ password }}"
-        ca_file: "{{ ca_file }}"
     - name: Create all guest VMs
       include_tasks: tasks/createvm.yaml
       loop: "{{ guest_vms }}"
       loop_control:
         loop_var: outer_item
         label: "{{ outer_item.vm_name }}"
-    - name: Revoke the SSO token
-      no_log: true
-      ovirt_auth:
-        state: absent
-        ovirt_auth: "{{ ovirt_auth }}"
 ...
