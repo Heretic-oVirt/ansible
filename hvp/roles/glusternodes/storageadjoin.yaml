@@ -42,16 +42,16 @@
       # TODO: we should wait for actual user/OU availability (needed by the join below)
       wait_for:
         host: "{{ hvp_adjoin_domain }}"
-        port: "{{ item }}"
+        port: "{{ item.port }}"
         state: started
-        delay: 60
-        sleep: 30
-        timeout: 300
+        delay: "{{ item.delay }}"
+        sleep: "{{ item.sleep }}"
+        timeout: "{{ item.timeout }}"
       with_items:
-        - 53
-        - 135
-        - 389
-        - 464
+        - { port: '53', delay: '60', sleep: '30', timeout: '300' }
+        - { port: '135', delay: '0', sleep: '30', timeout: '300' }
+        - { port: '389', delay: '0', sleep: '30', timeout: '300' }
+        - { port: '464', delay: '0', sleep: '30', timeout: '300' }
     - name: Obtain Kerberos ticket
       shell: |
         set timeout 10
