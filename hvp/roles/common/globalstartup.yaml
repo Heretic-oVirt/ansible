@@ -1,0 +1,116 @@
+---
+# Ansible playbook to properly startup a whole HVP cluster previously shut down using our playbook
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include_tasks: ../common/tasks/createkeys.yaml
+- name: Perform initial poweron on all nodes
+  # TODO: physically power on nodes, maybe using BMC access
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars from files
+      include_vars:
+        file: "../common/vars/hvp.yaml"
+    - name: Make sure that basic needed services are up and running
+      systemd:
+        name: "{{ item }}"
+        state: started
+      with_items:
+        - glusterd.service
+- name: Start GlusterFS volumes
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - name: Start all GlusterFS volumes
+      shell: "for volname in $(gluster volume list); do gluster --mode=script volume start ${volname} force ; sleep 5 ; done"
+- name: Perform further startup actions on all nodes
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Restart CTDB and Gluster-block services
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - gluster-block-target.service
+        - gluster-blockd.service
+        - gluster-lock.mount
+        - ctdb.service
+      loop_control:
+        pause: 5
+    - name: Restart oVirt HA services
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - ovirt-ha-broker.service
+        - ovirt-ha-agent.service
+        - vdsmd.service
+      loop_control:
+        pause: 5
+- name: Take oVirt Hosted Engine out of maintenance
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars from files
+      include_vars:
+        file: "../common/vars/hvp.yaml"
+    - name: Remove global maintenance
+      vars:
+        ansible_ssh_pipelining: no
+      command: hosted-engine --set-maintenance --mode=none
+      register: exitglobalmaintenance_result
+    - name: Wait for good Engine health
+      vars:
+        ansible_ssh_pipelining: no
+      shell: "hosted-engine --vm-status | grep -i good"
+      retries: 60
+      delay: 30
+      register: enginehealth_result
+      until: enginehealth_result is succeeded
+- name: Perform final startup operations through the Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars from files
+      include_vars:
+        file: "../common/vars/hvp.yaml"
+    - name: Obtain oVirt Engine SSO token
+      no_log: true
+      ovirt_auth:
+        url: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_file: "{{ ca_file }}"
+    - name: Put all non-Engine storage domains out of maintenance
+      ovirt_storage_domains:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item }}"
+        data_center: "{{ dc_name }}"
+        state: present
+        wait: true
+      with_items:
+        - "{{ vmstore_sd_name }}"
+        - "{{ iso_sd_name }}"
+    - name: Startup all guest VMs
+      # Note: ignoring errors to allow for non-existent VMs
+      # TODO: check for VM existence and skip if missing
+      ovirt_vms:
+        auth: "{{ ovirt_auth }}"
+        state: started
+        cluster: "{{ cluster_name }}"
+        name: "{{ item.vm_name }}"
+        wait: true
+      ignore_errors: true
+      with_items: "{{ guest_vms }}"
+    - name: Revoke the SSO token
+      no_log: true
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"
+...
