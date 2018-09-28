@@ -1,0 +1,106 @@
+---
+# Ansible playbook to properly shutdown a whole HVP cluster
+- name: Generate SSH key if not present
+  hosts: localhost
+  tasks:
+    - include_tasks: ../common/tasks/createkeys.yaml
+- name: Perform preliminary shutdown/maintenance operations through the Engine
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars from files
+      include_vars:
+        file: "../common/vars/hvp.yaml"
+    - name: Obtain oVirt Engine SSO token
+      no_log: true
+      ovirt_auth:
+        url: "{{ url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        ca_file: "{{ ca_file }}"
+    - name: Shutdown all guest VMs
+      # Note: ignoring errors to allow for non-existent VMs
+      # TODO: check for VM existence and skip if missing
+      # TODO: find a way to reverse the list of VMs to shutdown them in the proper dependency order
+      ovirt_vms:
+        auth: "{{ ovirt_auth }}"
+        state: stopped
+        cluster: "{{ cluster_name }}"
+        name: "{{ item.vm_name }}"
+        wait: true
+      ignore_errors: true
+      with_items: "{{ guest_vms }}"
+    - name: Put all storage domains in maintenance except for Engine domain
+      ovirt_storage_domains:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ item }}"
+        data_center: "{{ dc_name }}"
+        state: maintenance
+      with_items:
+        - "{{ iso_sd_name }}"
+        - "{{ vmstore_sd_name }}"
+    - name: Revoke the SSO token
+      no_log: true
+      ovirt_auth:
+        state: absent
+        ovirt_auth: "{{ ovirt_auth }}"
+- name: Put oVirt Hosted Engine in maintenance
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars from files
+      include_vars:
+        file: "../common/vars/hvp.yaml"
+    - name: Activate global maintenance
+      vars:
+        ansible_ssh_pipelining: no
+      command: hosted-engine --set-maintenance --mode=global
+      register: enterglobalmaintenance_result
+- name: Perform Engine shutdown
+  hosts: ovirtengine
+  remote_user: root
+  tasks:
+    - name: Shutdown Engine VM
+      include_tasks: ../common/tasks/poweroff.yaml
+- name: Perform final shutdown actions on all nodes
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Stop oVirt HA services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - ovirt-ha-agent.service
+        - ovirt-ha-broker.service
+    - name: Stop CTDB and Gluster-block services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - ctdb.service
+        - gluster-lock.mount
+        - gluster-blockd.service
+        - gluster-block-target.service
+    - name: Unmount Engine domain
+      shell: "for mountpoint in $(mount | grep rhev | awk '{print $3}'); do umount -l -f ${mountpoint} ; done"
+- name: Stop GlusterFS volumes
+  hosts: ovirt_master
+  remote_user: root
+  tasks:
+    - name: Stop all GlusterFS volumes
+      shell: "for volname in $(gluster volume list); do gluster --mode=script volume stop ${volname} force ; done"
+- name: Perform final poweroff on all nodes
+  hosts: ovirtnodes
+  remote_user: root
+  tasks:
+    - include_tasks: ../common/tasks/setupkeys.yaml
+    - name: Get common vars from files
+      include_vars:
+        file: "../common/vars/hvp.yaml"
+    - name: Shutdown node
+      include_tasks: ../common/tasks/poweroff.yaml
+...
