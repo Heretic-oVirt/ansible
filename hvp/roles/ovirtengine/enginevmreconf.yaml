@@ -34,6 +34,11 @@
       command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
       args:
         creates: "/root/{{ ansible_nodename }}-original-conf.tar.gz"
+    - name: Disable CentOS-hosted oVirt and GlusterFS repositories
+      # Note: when nightly mode gets enabled we assume that we are late in the selected-oVirt lifecycle and some repositories and release packages may have disappeared - working around here
+      command: yum-config-manager --disable 'ovirt-centos-ovirt*' --disable 'ovirt-*-centos-gluster*'
+      register: disablecentosovirtrepos_result
+      when: hvp_ovirt_nightly_mode
     - name: Install YUM-related packages
       vars:
         hvp_yum_related_packages:
@@ -53,9 +58,22 @@
     - name: Disable EPEL repo use of DNS-based balanced mirrors
       shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepodirect_result
+    - name: Conditionally add oVirt nightly snaphot repos
+      # Note: when nightly mode gets enabled we assume that we are late in the selected-oVirt lifecycle and some repositories and release packages may have disappeared - working around here
+      yum_repository:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        state: present
+        enabled: yes
+        baseurl: "{{ item.baseurl }}"
+        gpgcheck: no
+      with_items:
+        - { name: "ovirt-{{ compatibility_version }}-snapshot", description: "oVirt {{ compatibility_version }} - Nightly snapshot", baseurl: "https://resources.ovirt.org/pub/ovirt-{{ compatibility_version }}-snapshot/rpm/el$releasever/" }
+        - { name: "ovirt-{{ compatibility_version }}-snapshot-static", description: "oVirt {{ compatibility_version }} - Nightly snapshot static", baseurl: "https://resources.ovirt.org/pub/ovirt-{{ compatibility_version }}-snapshot-static/rpm/el$releasever/" }
+      when: hvp_ovirt_nightly_mode
     - name: Add HVP release package
       yum:
-        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-4.noarch.rpm
+        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-5.noarch.rpm
         state: latest
     - name: Enable HVP RHV repo
       command: yum-config-manager --enable hvp-rhv-rebuild
@@ -88,6 +106,14 @@
     - name: Prefer HVP RH Satellite repo
       command: yum-config-manager --save --setopt='hvp-rhsat-rebuild.priority=50'
       register: preferhvprhsatrebuild_result
+      when: not hvp_orthodox_mode
+    - name: Enable HVP Ansible repo
+      command: yum-config-manager --enable hvp-ansible-rebuild
+      register: enablehvpansiblerebuild_result
+      when: not hvp_orthodox_mode
+    - name: Prefer HVP Ansible repo
+      command: yum-config-manager --save --setopt='hvp-ansible-rebuild.priority=50'
+      register: preferhvpansiblerebuild_result
       when: not hvp_orthodox_mode
     - name: Disable use of mirrors in all repos
       shell: "sed -i -e 's/^mirrorlist/#mirrorlist/ ; s/^metalink/#metalink/ ; s/^#baseurl/baseurl/' $(find /etc/yum.repos.d -type f -name '*.repo' -print)"
@@ -131,7 +157,7 @@
           - expect
           - ncompress
           - libnl
-          - redhat-lsb
+          - redhat-lsb-core
           - haveged
           - hping3
           - p7zip
@@ -150,6 +176,7 @@
           - libselinux-python
           - libsemanage-python
           - virtio-win
+          - ovirt-guest-agent
       yum:
         name: "{{ hvp_generic_engine_packages }}"
         state: latest
