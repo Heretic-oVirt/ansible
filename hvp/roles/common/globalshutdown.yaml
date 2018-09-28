@@ -37,6 +37,7 @@
         name: "{{ item }}"
         data_center: "{{ dc_name }}"
         state: maintenance
+        wait: true
       with_items:
         - "{{ iso_sd_name }}"
         - "{{ vmstore_sd_name }}"
