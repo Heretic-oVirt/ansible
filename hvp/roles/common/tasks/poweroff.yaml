@@ -12,7 +12,7 @@
     search_regex: "OpenSSH"
     state: stopped
     delay: 10
-    sleep: 1
+    sleep: 5
     timeout: 300
   delegate_to: localhost
 ...
