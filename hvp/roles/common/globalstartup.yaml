@@ -102,7 +102,7 @@
       # TODO: check for VM existence and skip if missing
       ovirt_vms:
         auth: "{{ ovirt_auth }}"
-        state: started
+        state: running
         cluster: "{{ cluster_name }}"
         name: "{{ item.vm_name }}"
         wait: true
