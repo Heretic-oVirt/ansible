@@ -34,11 +34,6 @@
       command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
       args:
         creates: "/root/{{ ansible_nodename }}-original-conf.tar.gz"
-    - name: Disable CentOS-hosted oVirt and GlusterFS repositories
-      # Note: when nightly mode gets enabled we assume that we are late in the selected-oVirt lifecycle and some repositories and release packages may have disappeared - working around here
-      command: yum-config-manager --disable 'ovirt-centos-ovirt*' --disable 'ovirt-*-centos-gluster*'
-      register: disablecentosovirtrepos_result
-      when: hvp_ovirt_nightly_mode
     - name: Install YUM-related packages
       vars:
         hvp_yum_related_packages:
@@ -48,12 +43,18 @@
       yum:
         name: "{{ hvp_yum_related_packages }}"
         state: latest
+        disablerepo: '*'
+        enablerepo: 'base,updates'
+    - name: Disable CentOS-hosted oVirt and GlusterFS repositories
+      # Note: when nightly mode gets enabled we assume that we are late in the selected-oVirt lifecycle and some repositories and release packages may have disappeared - working around here
+      command: yum-config-manager --disable 'ovirt-centos-ovirt*' --disable 'ovirt-*-centos-gluster*'
+      register: disablecentosovirtrepos_result
+      when: hvp_ovirt_nightly_mode
     - name: Enable CentOS CR repo
       command: yum-config-manager --enable cr
       register: enablecentoscr_result
     - name: Customize EPEL repo inclusions
-      # TODO: make the following either idempotent or cleanly repeatable
-      shell: "sed -i -e 's/epel-release,/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
+      shell: "sed -i -e 's/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/epel-release,/' -e 's/epel-release,/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepoedit_result
     - name: Disable EPEL repo use of DNS-based balanced mirrors
       shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
@@ -121,12 +122,32 @@
     - name: Enable use of deltarpm
       command: yum-config-manager --save --setopt='deltarpm=1'
       register: enabledeltarpm_result
-    - name: Upgrade all OS packages
+    - name: Check whether Engine upgrade will be needed
+      command: engine-upgrade-check
+      ignore_errors: yes
+      register: engineupgradecheck_result
+      when: hvp_upgrade_engine
+    - name: Upgrade Engine setup packages
+      yum:
+        name: 'ovirt*setup*'
+        state: latest
+      when: hvp_upgrade_engine and (engineupgradecheck_result.rc == 0)
+    - name: Perform Engine upgrade
+      command: engine-setup --accept-defaults
+      register: engineupgrade_result
+      when: hvp_upgrade_engine and (engineupgradecheck_result.rc == 0)
+    - name: Upgrade all packages
       yum:
         name: '*'
         state: latest
         update_cache: yes
-        disablerepo: "ovirt-{{ compatibility_version }}"
+      when: hvp_upgrade_engine
+    - name: Upgrade Python oVirt SDK anyway
+      # Note: official oVirt 4.1 Engine appliance vm has an older version, incompatible with Ansible 2.5
+      yum:
+        name: python-ovirt-engine-sdk4
+        state: latest
+      when: not hvp_upgrade_engine
     - name: Install HVP-recommended packages
       vars:
         hvp_generic_engine_packages:
@@ -645,6 +666,11 @@
         group: root
         mode: 0644
         backup: no
+    - name: Restart NetworkManager to avoid problems below
+      # TODO: ideally should restart only if upgraded above
+      systemd:
+        name: NetworkManager
+        state: restarted
     - name: Reconfigure Engine vm network interface
       nmcli:
         ifname: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['interface'] }}"
@@ -689,14 +715,12 @@
         ansible_ssh_pipelining: no
       command: hosted-engine --set-maintenance --mode=none
       register: exitglobalmaintenance_result
-    - name: Wait for Engine vm to come back if rebooting failed above
-      # TODO: should wait for Engine liveliness by checking its status on a node
-      wait_for:
-        host: "{{ groups['ovirtengine'] | first }}"
-        port: 22
-        state: started
-        connect_timeout: 30
-        delay: 300
-        sleep: 30
-        timeout: 600
+    - name: Wait for good Engine health
+      vars:
+        ansible_ssh_pipelining: no
+      shell: "hosted-engine --vm-status | grep -i good"
+      retries: 60
+      delay: 30
+      register: enginehealth_result
+      until: enginehealth_result is succeeded
 ...
