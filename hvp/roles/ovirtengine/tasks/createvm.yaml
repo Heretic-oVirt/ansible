@@ -1,5 +1,6 @@
 ---
 # Ansible tasks file to create a single oVirt VM inside a loop (with all parameters passed as outer_item elements)
+# Note: the ballooning_enabled parameter requires Ansible >= 2.5
 - name: Obtain oVirt Engine SSO token
   no_log: true
   ovirt_auth:
@@ -18,6 +19,7 @@
     delete_protected: "{{ outer_item.vm_delete_protected }}"
     high_availability: "{{ outer_item.vm_high_availability }}"
     memory: "{{ outer_item.vm_memory }}"
+    ballooning_enabled: true
     cpu_cores: "{{ outer_item.vm_cpu_cores }}"
     cpu_sockets: "{{ outer_item.vm_cpu_sockets }}"
     cpu_shares: "{{ outer_item.vm_cpu_shares }}"
