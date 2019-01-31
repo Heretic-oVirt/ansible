@@ -1306,11 +1306,11 @@ force=yes
 
 {% if groups['glusternodes'] | length == 1 %}
 # Note: single node does not support cluster.shd-max-threads
-key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops
-value=metadata-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,performance.cache-samba-metadata,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,on,on,on,on
 {% else %}
-key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads
-value=metadata-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,performance.cache-samba-metadata,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,on,on,on,on
 {% endif %}
 
 brick_dirs=/gluster_bricks/winshare/brick1/brick
@@ -1333,11 +1333,11 @@ force=yes
 
 {% if groups['glusternodes'] | length == 1 %}
 # Note: single node does not support cluster.shd-max-threads
-key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,nfs.disable
-value=metadata-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,off
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,nfs.disable,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,off,on,on,on
 {% else %}
-key=group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,nfs.disable
-value=metadata-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,off
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,nfs.disable,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,off,on,on,on
 {% endif %}
 
 brick_dirs=/gluster_bricks/unixshare/brick1/brick
