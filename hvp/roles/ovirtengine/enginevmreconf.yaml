@@ -30,6 +30,9 @@
       set_fact:
         grub_cfg_file: "{{ uefipresence_result.stat.exists | ternary('/etc/grub2-efi.cfg','/etc/grub2.cfg') }}"
         grub_files_dir: "{{ uefipresence_result.stat.exists | ternary('/boot/efi/EFI/redhat','/boot/grub2') }}"
+    - name: Find CentOS-hosted oVirt and GlusterFS dependency repositories
+      shell: grep -o '\[ovirt-.*centos.*\]' /etc/yum.repos.d/ovirt-*-dependencies.repo  | tr -d '[]'
+      register: centosovirtrepos_result
     - name: Perform a preliminary configuration backup
       command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
       args:
@@ -45,14 +48,18 @@
         state: latest
         disablerepo: '*'
         enablerepo: 'base,updates'
-    - name: Disable CentOS-hosted oVirt and GlusterFS repositories
+    - name: Mark CentOS-hosted repositories as higher priority than others
+      # Note: this is meant mainly to prevent EPEL from replacing oVirt-specific packages
+      # Note: when not in orthodox mode our own repos are higher priority yet
+      command: "yum-config-manager --save --setopt='{{item}}.priority=75'"
+      register: setcentosovirtrepospriority_result
+      with_items: "{{ centosovirtrepos_result.stdout_lines }}"
+    - name: Do not fail if CentOS-hosted oVirt and GlusterFS dependency repositories disappear
       # Note: when nightly mode gets enabled we assume that we are late in the selected-oVirt lifecycle and some repositories and release packages may have disappeared - working around here
-      command: yum-config-manager --disable 'ovirt-centos-ovirt*' --disable 'ovirt-*-centos-gluster*'
-      register: disablecentosovirtrepos_result
+      command: "yum-config-manager --save --setopt='{{item}}.skip_if_unavailable=1'"
+      register: ignorecentosovirtreposfailure_result
+      with_items: "{{ centosovirtrepos_result.stdout_lines }}"
       when: hvp_ovirt_nightly_mode
-    - name: Enable CentOS CR repo
-      command: yum-config-manager --enable cr
-      register: enablecentoscr_result
     - name: Customize EPEL repo inclusions
       shell: "sed -i -e 's/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/epel-release,/' -e 's/epel-release,/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepoedit_result
@@ -60,12 +67,14 @@
       shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepodirect_result
     - name: Conditionally add oVirt nightly snaphot repos
-      # Note: when nightly mode gets enabled we assume that we are late in the selected-oVirt lifecycle and some repositories and release packages may have disappeared - working around here
+      # Note: adding these manually since the release package may have disappeared
+      # Note: adding skip_if_unavailable since these repos too seem to disappear after a while
       yum_repository:
         name: "{{ item.name }}"
         description: "{{ item.description }}"
         state: present
         enabled: yes
+        skip_if_unavailable: yes
         baseurl: "{{ item.baseurl }}"
         gpgcheck: no
       with_items:
@@ -342,7 +351,6 @@
         - 'semodule_package -o myntpdate.pp -m myntpdate.mod'
         - 'semodule -i myntpdate.pp'
     - name: Enable NTPdate on boot
-      # TODO: should enable only if all in the registered values above are compilentpdatepolicy_result.results[*].rc==0
       systemd:
         name: ntpdate
         enabled: yes
@@ -573,8 +581,9 @@
         state: present
         path: /etc/aliases
         insertafter: EOF
-        regexp: '^monitoring:'
-        line: "monitoring:	{{ hvp_admin_username }}"
+        regexp: '^{{ hvp_email_receiver | regex_replace("@localhost", "") }}:'
+        line: '{{ hvp_email_receiver | regex_replace("@localhost", "") }}:	{{ hvp_admin_username }}'
+      when: "'@localhost' in hvp_email_receiver"
       register: aliases_result
     - name: Apply mail aliases
       command: newaliases
@@ -600,7 +609,7 @@
         - haveged
         - postfix
     - name: Create oVirt-shell configuration file
-      # TODO: check autoconnect - maybe unsupported because of oVirt-shell deprecation
+      # TODO: check autoconnect
       template:
         src: templates/ovirtshellrc.j2
         dest: /root/.ovirtshellrc
