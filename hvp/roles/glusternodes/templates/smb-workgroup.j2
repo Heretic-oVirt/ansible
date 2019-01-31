@@ -26,7 +26,6 @@
 
    map to guest = Bad user
    username map = /etc/samba/smbusers
-   vfs objects = acl_xattr
    store dos attributes = yes
    map acl inherit = yes
    dos filetime resolution = yes
@@ -50,6 +49,7 @@
 [IPC$]
    comment = Remote IPC
    path = /tmp
+   vfs objects = acl_xattr
 
 
 #====================== Local Share Definitions ==============================
@@ -63,7 +63,7 @@
    available = yes
    guest ok = no
    valid users = %S
-   vfs objects = glusterfs recycle
+   vfs objects = shadow_copy2 acl_xattr recycle glusterfs
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
@@ -79,7 +79,7 @@
    available = yes
    guest ok = no
    csc policy = disable
-   vfs objects = glusterfs recycle
+   vfs objects = acl_xattr recycle glusterfs
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
@@ -94,7 +94,7 @@
    writable = yes
    available = yes
    guest ok = no
-   vfs objects = glusterfs recycle
+   vfs objects = shadow_copy2 acl_xattr recycle glusterfs
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
@@ -108,7 +108,7 @@
    writable = yes
    available = yes
    guest ok = no
-   vfs objects = glusterfs recycle
+   vfs objects = shadow_copy2 acl_xattr recycle glusterfs
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
