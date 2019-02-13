@@ -45,8 +45,9 @@
       with_items: "{{ enginevolumeentries_result.files }}"
     - name: Unmount the Gluster volume intended for Self Hosted Engine
       command: "umount -l /mnt"
+      args:
+        warn: no
       register: enginevolumeumount_result
-      warn: false
     - name: Remove any leftover libvirt domains
       shell: "for domain in $(virsh list --all --name); do virsh undefine ${domain} --remove-all-storage; done"
       ignore_errors: yes
