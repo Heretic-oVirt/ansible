@@ -617,7 +617,7 @@
         state: installed
       ignore_errors: yes
       register: installovirtshell_result
-- name: Create oVirt-shell configuration file
+    - name: Create oVirt-shell configuration file
       template:
         src: templates/ovirtshellrc.j2
         dest: /root/.ovirtshellrc
