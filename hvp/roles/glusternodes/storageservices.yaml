@@ -19,8 +19,9 @@
   tasks:
     - name: Mount the Gluster volume intended for CIFS sharing
       command: "mount -t glusterfs localhost:/{{ hvp_winshare_volume_name }} /mnt"
+      args:
+        warn: no
       register: winsharemount_result
-      warn: false
     - name: Create the toplevel folders intended for CIFS sharing
       file:
         path: "/mnt/{{ item.path }}"
@@ -32,16 +33,18 @@
       when: winsharemount_result.rc == 0
     - name: Unmount the Gluster volume intended for CIFS sharing
       command: "umount -l /mnt"
+      args:
+        warn: no
       register: winshareumount_result
-      warn: false
 - name: Prepare Gluster-volume based share dirs for NFS
   hosts: gluster_master
   remote_user: root
   tasks:
     - name: Mount the Gluster volume intended for NFS sharing
       command: "mount -t glusterfs localhost:/{{ hvp_unixshare_volume_name }} /mnt"
+      args:
+        warn: no
       register: unixsharemount_result
-      warn: false
     - name: Create the toplevel folders intended for NFS sharing
       file:
         path: "/mnt/{{ item.path }}"
@@ -53,8 +56,9 @@
       when: unixsharemount_result.rc == 0
     - name: Unmount the Gluster volume intended for NFS sharing
       command: "umount -l /mnt"
+      args:
+        warn: no
       register: unixshareumount_result
-      warn: false
 - name: Configure and start Gluster-block
   hosts: glusternodes
   remote_user: root
