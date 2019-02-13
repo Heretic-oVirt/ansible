@@ -95,8 +95,9 @@
       when: backupmount_result.rc == 0
     - name: Unmount the Gluster volume intended for Backup
       command: "umount -l /mnt"
+      args:
+        warn: no
       register: backupumount_result
-      warn: false
 - name: Install, configure and start Bareos on Engine
   hosts: ovirtengine
   remote_user: root
