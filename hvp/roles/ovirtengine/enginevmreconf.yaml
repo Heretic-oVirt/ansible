@@ -37,6 +37,8 @@
       command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
       args:
         creates: "/root/{{ ansible_nodename }}-original-conf.tar.gz"
+    - name: Make YUM more robust in presence of network problems
+      command: yum-config-manager --save --setopt='retries=30' --setopt='timeout=60'
     - name: Install YUM-related packages
       vars:
         hvp_yum_related_packages:
@@ -45,7 +47,7 @@
         - deltarpm
       yum:
         name: "{{ hvp_yum_related_packages }}"
-        state: latest
+        state: installed
         disablerepo: '*'
         enablerepo: 'base,updates'
     - name: Mark CentOS-hosted repositories as higher priority than others
@@ -84,7 +86,7 @@
     - name: Add HVP release package
       yum:
         name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-5.noarch.rpm
-        state: latest
+        state: installed
     - name: Enable HVP RHV repo
       command: yum-config-manager --enable hvp-rhv-rebuild
       register: enablehvprhvrebuild_result
@@ -209,7 +211,7 @@
           - ovirt-guest-agent
       yum:
         name: "{{ hvp_generic_engine_packages }}"
-        state: latest
+        state: installed
     - name: Install Bareos-related packages
       vars:
         hvp_bareos_engine_packages:
@@ -221,7 +223,7 @@
           - bareos-webui
       yum:
         name: "{{ hvp_bareos_engine_packages }}"
-        state: latest
+        state: installed
     - name: Disable Bareos-related services until we configure them
       systemd:
         name: "{{ item }}"
@@ -608,8 +610,14 @@
         - firewalld
         - haveged
         - postfix
-    - name: Create oVirt-shell configuration file
-      # TODO: check autoconnect
+    - name: Install oVirt-shell package
+      # Note: oVirt-shell has been deprecated and is not available on oVirt >= 4.3 (since it depends on API v3)
+      yum:
+        name: 'ovirt-engine-cli'
+        state: installed
+      ignore_errors: yes
+      register: installovirtshell_result
+- name: Create oVirt-shell configuration file
       template:
         src: templates/ovirtshellrc.j2
         dest: /root/.ovirtshellrc
@@ -617,6 +625,7 @@
         group: root
         mode: 0600
         backup: no
+      when: installovirtshell_result.rc == 0
     - name: Customize root home subdirectories
       file:
         path: "{{ item.path }}"
