@@ -34,5 +34,7 @@
     gluster volume heal ${i} info
     echo '---'
   done
+  echo "----12------------------"
+  vdostats --human-readable
 ) > /root/log/$(hostname)-$(date '+%Y-%m-%d-%H-%M')-storage.log 2>&1
 
