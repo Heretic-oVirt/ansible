@@ -37,8 +37,6 @@
       command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
       args:
         creates: "/root/{{ ansible_nodename }}-original-conf.tar.gz"
-    - name: Make YUM more robust in presence of network problems
-      command: yum-config-manager --save --setopt='retries=30' --setopt='timeout=60'
     - name: Install YUM-related packages
       vars:
         hvp_yum_related_packages:
@@ -50,6 +48,8 @@
         state: installed
         disablerepo: '*'
         enablerepo: 'base,updates'
+    - name: Make YUM more robust in presence of network problems
+      command: yum-config-manager --save --setopt='retries=30' --setopt='timeout=60'
     - name: Mark CentOS-hosted repositories as higher priority than others
       # Note: this is meant mainly to prevent EPEL from replacing oVirt-specific packages
       # Note: when not in orthodox mode our own repos are higher priority yet
