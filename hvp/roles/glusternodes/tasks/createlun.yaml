@@ -5,7 +5,7 @@
   set_fact:
     active_storage_nodes_ips: |
       {% set ip_list = [] %}
-      {% for host in groups['active_storage_nodes']%}
+      {% for host in groups['active_storage_nodes'] %}
       {% set _ = ip_list.append(lookup('dig', host, '@'+groups['ovirt_master'][0])) %}
       {% endfor %}
       {{ ip_list }}
