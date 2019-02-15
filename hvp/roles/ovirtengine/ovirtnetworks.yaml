@@ -13,6 +13,7 @@
       include_vars:
         file: ../common/vars/hvp.yaml
     - name: Install OVN-related packages on Engine
+      # TODO: added libibverbs explicitly - remove when properly detected as dependency upstream
       vars:
         hvp_ovn_engine_packages:
           - openvswitch
@@ -20,6 +21,7 @@
           - openvswitch-ovn-central
           - python-openvswitch
           - ovirt-provider-ovn
+          - libibverbs
       # TODO: lower log level in /etc/ovirt-provider-ovn/logger.conf
       yum:
         name: "{{ hvp_ovn_engine_packages }}"
