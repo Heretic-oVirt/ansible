@@ -63,6 +63,10 @@
   hosts: glusternodes
   remote_user: root
   tasks:
+    - name: Remove spurious state file
+      file:
+        path: /etc/target/saveconfig.json
+        state: absent
     - name: Enable and start the Gluster-block service
       systemd:
         name: gluster-blockd
