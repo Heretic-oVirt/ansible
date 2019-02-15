@@ -1,6 +1,6 @@
 ---
 # Ansible tasks file to create a single oVirt VM inside a loop (with all parameters passed as outer_item elements)
-# Note: the ballooning_enabled parameter requires Ansible >= 2.5
+# Note: the ballooning_enabled and graphical_console parameters require Ansible >= 2.5
 - name: Obtain oVirt Engine SSO token
   no_log: true
   ovirt_auth:
@@ -25,6 +25,9 @@
     cpu_shares: "{{ outer_item.vm_cpu_shares }}"
     type: "{{ outer_item.vm_type }}"
     operating_system: "{{ outer_item.vm_operating_system }}"
+    graphical_console:
+      protocol:
+        - vnc
     wait: true
 - name: Create oVirt VM disk
   ovirt_disks:
