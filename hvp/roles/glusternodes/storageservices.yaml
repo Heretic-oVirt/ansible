@@ -60,6 +60,7 @@
         warn: no
       register: unixshareumount_result
 - name: Configure and start Gluster-block
+  # TODO: making the basic Gluster-block configuration conditional since it is still somewhat unstable (frequent SIGSEGVs)
   hosts: glusternodes
   remote_user: root
   tasks:
@@ -67,18 +68,21 @@
       file:
         path: /etc/target/saveconfig.json
         state: absent
+      when: (hvp_lun_sizes | length) > 0
     - name: Enable and start the Gluster-block service
       systemd:
         name: gluster-blockd
         enabled: true
         state: started
         no_block: no
+      when: (hvp_lun_sizes | length) > 0
 - name: Create Gluster-block based LUNs
   hosts: gluster_master
   remote_user: root
   tasks:
     - name: Create all Gluster-block based LUNs
       include_tasks: tasks/createlun.yaml
+      when: (hvp_lun_sizes | length) > 0
       with_indexed_items: "{{ hvp_lun_sizes }}"
       loop_control:
         loop_var: outer_item
