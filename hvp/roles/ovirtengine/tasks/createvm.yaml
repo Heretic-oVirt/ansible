@@ -9,7 +9,7 @@
     password: "{{ password }}"
     ca_file: "{{ ca_file }}"
 - name: Create oVirt VM
-  ovirt_vms:
+  ovirt_vm:
     auth: "{{ ovirt_auth }}"
     state: present
     cluster: "{{ cluster_name }}"
@@ -30,7 +30,7 @@
         - vnc
     wait: true
 - name: Create oVirt VM disk
-  ovirt_disks:
+  ovirt_disk:
     auth: "{{ ovirt_auth }}"
     state: attached
     name: "{{ outer_item.vm_name }}_disk"
@@ -42,7 +42,7 @@
     bootable: true
     wait: true
 - name: Create oVirt VM nic
-  ovirt_nics:
+  ovirt_nic:
     auth: "{{ ovirt_auth }}"
     state: plugged
     name: "{{ outer_item.vm_name }}_nic"
@@ -75,7 +75,7 @@
   when: dhcpdreconf_result.changed
   delegate_to: localhost
 - name: Start oVirt VM
-  ovirt_vms:
+  ovirt_vm:
     auth: "{{ ovirt_auth }}"
     state: running
     cluster: "{{ cluster_name }}"

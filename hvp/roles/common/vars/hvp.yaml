@@ -1,13 +1,12 @@
 # Global variables for HVP Ansible playbooks
-# Note: this file will be overridden by install-time autodetection logic
 
 ## HVP local conventions
 hvp_management_domainname: mgmt.private
 hvp_gluster_domainname: gluster.private
-hvp_lan_domainname: mgmt.private
+hvp_lan_domainname: lan.private
 hvp_storage_name: discord
 hvp_orthodox_mode: false
-hvp_ovirt_nightly_mode: false
+hvp_ovirt_nightly_mode: true
 hvp_use_vdo: false
 hvp_upgrade_engine: false
 hvp_master_node: "{{ groups['ovirt_master'] | first }}"
@@ -26,12 +25,12 @@ hvp_engine_netprefix: "24"
 hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
 # Note: generally, we try to use an independent pingable IP (central managed switch console interface) as "gateway" for oVirt setup
 # Note: when missing an independent pingable IP (apart from the default gateway) repeat the default gateway IP here
-hvp_switch_ip: "172.20.10.200"
+hvp_switch_ip: "172.20.10.1"
 # Note: generally, we keep a distinct proper gateway address on the management network only for network routing configuration
 hvp_gateway_ip: "172.20.10.1"
 hvp_metrics_name: luna
 hvp_metrics_domainname: "{{ hvp_management_domainname }}"
-hvp_timezone: UTC
+hvp_timezone: Europe/Rome
 hvp_firewall_manager: "firewalld"
 hvp_spice_pki_subject: "C=EN, L=Test, O=Test, CN=Test"
 hvp_pki_subject: "/C=EN/L=Test/O=Test/CN=Test"
@@ -40,6 +39,8 @@ hvp_admin_username: hvpadmin
 hvp_admin_password: 'hvpdemo'
 hvp_email_sender: root@localhost
 hvp_email_receiver: monitoring@localhost
+hvp_email_relay: ""
+hvp_email_relay_use_smtps: false
 
 ## HVP OVN settings
 hvp_ovn_private_network_names:
@@ -85,10 +86,8 @@ hvp_backup_arbitersize: "10GB"
 hvp_thinpool_chunksize: "1536k"
 
 ## HVP Gluster-block settings
-hvp_lun_sizes:
-  - 200GiB
-  - 300GiB
-  - 450GiB
+hvp_lun_sizes: []
+#  - 300GiB
 
 ## Engine credentials:
 url: "https://{{ hvp_engine_name }}.{{ hvp_engine_domainname }}/ovirt-engine/api"
@@ -97,20 +96,21 @@ password: 'HVP_dem0'
 ca_file: /etc/pki/ovirt-engine/ca.pem
 
 ## Hosts credentials:
-# Note: the user must manually confirm BMC settings by editing here
+# Note: the user must manually confirm BMC settings by editing here if not explicitly confirmed by non-default settings
 # TODO: add support for BMC options
 host_password: 'HVP_dem0'
 #host_bmc_type: ipmilan
-#host_bmc_options: []
-host_bmc_user: hvpbmcadmin
-host_bmc_password: 'HVP_dem0'
+##host_bmc_options: []
+#host_bmc_user: hvpbmcadmin
+#host_bmc_password: 'HVP_dem0'
 
 # Env:
 ## Datacenter:
 # TODO: forcing default name since any personalization does not get into appliance cloudinit and causes mismatch - open Bugzilla ticket and revert
 hvp_dc_name: HVPDataCenter
 dc_name: "Default"
-compatibility_version: "4.1"
+# TODO: verify whether "master" is a valid compatibility_version - replace otherwise
+compatibility_version: "4.2"
 
 ## Cluster:
 # TODO: forcing default name since any personalization does not get into appliance cloudinit and causes mismatch - open Bugzilla ticket and revert
@@ -143,19 +143,19 @@ hvp_static_address_block_start: 70
 
 got_mgmt_network: true
 mgmt_network: "172.20.10.0/24"
-hvp_mgmt_bridge_name: "ovirtmgmt"
+hvp_mgmt_bridge_name: ovirtmgmt
 
 got_gluster_network: true
-gluster_network: "172.20.11.0/24"
+gluster_network: 172.20.11.0/24
 # Note: no VM access to Gluster network is allowed, so no bridge is needed
 
-got_lan_network: false
-lan_network: ""
-hvp_lan_bridge_name: ""
+got_lan_network: true
+lan_network: 172.20.12.0/24
+hvp_lan_bridge_name: lan
 
-got_internal_network: false
-internal_network: ""
-hvp_internal_bridge_name: ""
+got_internal_network: true
+internal_network: 172.20.13.0/24
+hvp_internal_bridge_name: internal
 
 ## HVP guest VM settings
 vms_network_name: "{{ got_lan_network | ternary(hvp_lan_bridge_name, hvp_mgmt_bridge_name) }}"
@@ -164,13 +164,13 @@ vms_network: "{{ got_lan_network | ternary(lan_network, mgmt_network) }}"
 # TODO: dynamically extract the following from mirrored kickstart files
 guest_vms:
   - { vm_kickstart_file: 'hvp-dc-c7.ks', vm_name: 'DomainController', vm_comment: 'Active Directory Domain Controller', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 60GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('220') | ipaddr('address') }}", vm_service_port: 53 }
-  - { vm_kickstart_file: 'hvp-db-c7.ks', vm_name: 'DatabaseServer', vm_comment: 'Database Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 4GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('230') | ipaddr('address') }}", vm_service_port: 80 }
-  - { vm_kickstart_file: 'hvp-pr-c7.ks', vm_name: 'PrintServer', vm_comment: 'Print Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 80GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('190') | ipaddr('address') }}", vm_service_port: 445 }
-  - { vm_kickstart_file: 'hvp-vd-c7.ks', vm_name: 'TerminalServer', vm_comment: 'Remote Desktop Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 8GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('240') | ipaddr('address') }}", vm_service_port: 22 }
+#  - { vm_kickstart_file: 'hvp-db-c7.ks', vm_name: 'DatabaseServer', vm_comment: 'Database Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 4GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('230') | ipaddr('address') }}", vm_service_port: 80 }
+#  - { vm_kickstart_file: 'hvp-pr-c7.ks', vm_name: 'PrintServer', vm_comment: 'Print Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 80GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('190') | ipaddr('address') }}", vm_service_port: 445 }
+#  - { vm_kickstart_file: 'hvp-vd-c7.ks', vm_name: 'TerminalServer', vm_comment: 'Remote Desktop Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 8GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('240') | ipaddr('address') }}", vm_service_port: 22 }
 
 ## HVP AD-related settings
-hvp_adjoin_domain: ad.mgmt.private
-hvp_adjoin_realm: AD.MGMT.PRIVATE
+hvp_adjoin_domain: ad.lan.private
+hvp_adjoin_realm: AD.LAN.PRIVATE
 hvp_adjoin_username: adhvpadmin
 hvp_adjoin_password: 'HVP_dem0'
 hvp_netbios_domainname: AD
@@ -178,3 +178,25 @@ hvp_netbios_storagename: DISCORD
 hvp_ad_range: 9999-1999999999
 hvp_autorid_range: 2000000000-3999999999
 hvp_autorid_rangesize: 1000000
+
+## HVP custom Yum repo settings
+hvp_repo_baseurl:
+  - { name: 'hvp-rhgs-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/rhgs-rebuild/' }
+  - { name: 'hvp-fedora-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/fedora-rebuild/' }
+  - { name: 'hvp-openvswitch-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/openvswitch-rebuild/' }
+  - { name: 'hvp-samba-dc', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/samba-dc/' }
+  - { name: 'hvp-rhsat-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/rhsat-rebuild/' }
+  - { name: 'hvp-bareos-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/bareos-rebuild/' }
+  - { name: 'hvp-ansible-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/ansible-rebuild/' }
+  - { name: 'hvp-rhv-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/rhv-rebuild/' }
+  - { name: 'hvp', url: 'https://dangerous.ovirt.life/hvp-repos-development/el$releasever/hvp/' }
+hvp_repo_gpgkey:
+  - { name: 'hvp-rhgs-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-fedora-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-openvswitch-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-samba-dc', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-rhsat-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-bareos-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-ansible-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp-rhv-rebuild', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }
+  - { name: 'hvp', url: 'https://dangerous.ovirt.life/hvp-repos-development/RPM-GPG-KEY-hvp' }

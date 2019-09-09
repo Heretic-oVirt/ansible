@@ -24,7 +24,7 @@
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
     - name: Add main DataCenter storage domain
-      ovirt_storage_domains:
+      ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
         name: "{{ vmstore_sd_name }}"
         host: "{{ hvp_master_node }}"
@@ -41,7 +41,7 @@
       wait_for:
         timeout: 300
     - name: Add the remaining nodes to the oVirt Cluster
-      ovirt_hosts:
+      ovirt_host:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
         address: "{{ item }}"

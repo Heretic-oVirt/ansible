@@ -63,7 +63,9 @@
       args:
         executable: /usr/bin/expect
     - name: Join AD domain
-      shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createcomputer="File Servers"
+      # TODO: join fails when specifying OU - find out why and restore proper functionality
+      #shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createcomputer="File Servers"
+      shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)"
       register: join_result
     - name: Add further Kerberos SPNs
       # TODO: either move the keytab in a shared area or replicate it on all nodes
@@ -74,10 +76,6 @@
       with_items:
         - cifs
         - nfs
-#    - name: Grant disk administration privileges to Domain Admins
-#      # TODO: the following does not find the specified identity - find out why and correct
-#      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\\Domain Admins' SeDiskOperatorPrivilege -k"
-#      register: diskprivilegegrant_result
     - name: Remove Kerberos ticket
       command: kdestroy
       register: kdestroy_result
@@ -88,4 +86,25 @@
     - name: Signal Samba services to apply the configuration above
       command: smbcontrol all reload-config
       register: smbcontrolreload_result
+- name: Perform Samba cluster privileges configuration
+  hosts: gluster_master
+  remote_user: root
+  tasks:
+    - name: Obtain Kerberos ticket
+      shell: |
+        set timeout 10
+        spawn kinit {{ hvp_adjoin_username }}@{{ hvp_adjoin_realm }}
+        match_max 100000
+        expect -re -nocase "password for.*:.*$"
+        send -- "{{ hvp_adjoin_password }}\r"
+        expect eof
+      args:
+        executable: /usr/bin/expect
+    - name: Grant disk administration privileges to Domain Admins
+      # TODO: the following does not find the specified identity - find out why and correct
+      shell: "net sam rights grant '{{ hvp_netbios_domainname }}\\Domain Admins' SeDiskOperatorPrivilege -k"
+      register: diskprivilegegrant_result
+    - name: Remove Kerberos ticket
+      command: kdestroy
+      register: kdestroy_result
 ...

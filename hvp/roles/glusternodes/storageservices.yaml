@@ -60,7 +60,7 @@
         warn: no
       register: unixshareumount_result
 - name: Configure and start Gluster-block
-  # TODO: making the basic Gluster-block configuration conditional since it is still somewhat unstable (frequent SIGSEGVs)
+  # TODO: given the problems with Gluster-block, we interpret an empty list of LUNs as a choice for disabling Gluster-block altogether - revert when fixed
   hosts: glusternodes
   remote_user: root
   tasks:
@@ -76,6 +76,13 @@
         state: started
         no_block: no
       when: (hvp_lun_sizes | length) > 0
+    - name: Disable and stop the Gluster-block service
+      systemd:
+        name: gluster-blockd
+        enabled: false
+        state: stopped
+        no_block: no
+      when: (hvp_lun_sizes | length) == 0
 - name: Create Gluster-block based LUNs
   hosts: gluster_master
   remote_user: root

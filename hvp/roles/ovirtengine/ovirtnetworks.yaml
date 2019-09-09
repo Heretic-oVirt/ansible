@@ -138,7 +138,7 @@
         url: "http://{{ hostvars[groups['ovirtengine'] | first]['ansible_default_ipv4']['address'] }}:9696"
         wait: true
     - name: Qualify Management network when it is the only one
-      ovirt_networks:
+      ovirt_network:
         auth: "{{ ovirt_auth }}"
         name: "ovirtmgmt"
         data_center: "{{ dc_name }}"
@@ -149,7 +149,7 @@
         wait: true
       when: not got_gluster_network
     - name: Add Gluster network
-      ovirt_networks:
+      ovirt_network:
         auth: "{{ ovirt_auth }}"
         name: "gluster"
         description: Gluster network
@@ -161,7 +161,7 @@
         wait: true
       when: got_gluster_network
     - name: Add node interfaces to Gluster network
-      ovirt_host_networks:
+      ovirt_host_network:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
         interface: "{{ hostvars[item]['gluster_eth'] }}"
@@ -178,7 +178,7 @@
       when: got_gluster_network
       with_items: "{{ groups['ovirtnodes'] }}"
     - name: Qualify Management network when LAN network is absent
-      ovirt_networks:
+      ovirt_network:
         auth: "{{ ovirt_auth }}"
         name: "ovirtmgmt"
         data_center: "{{ dc_name }}"
@@ -189,7 +189,7 @@
         wait: true
       when: not got_lan_network
     - name: Add LAN network
-      ovirt_networks:
+      ovirt_network:
         auth: "{{ ovirt_auth }}"
         name: "lan"
         description: LAN network
@@ -201,7 +201,7 @@
         wait: true
       when: got_lan_network
     - name: Add node interfaces to LAN network
-      ovirt_host_networks:
+      ovirt_host_network:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
         interface: "{{ hostvars[item]['lan_eth'] }}"
@@ -218,7 +218,7 @@
       when: got_lan_network
       with_items: "{{ groups['ovirtnodes'] }}"
     - name: Add Internal network
-      ovirt_networks:
+      ovirt_network:
         auth: "{{ ovirt_auth }}"
         name: "internal"
         description: Internal network
@@ -230,7 +230,7 @@
         wait: true
       when: got_internal_network
     - name: Add node interfaces to Internal network
-      ovirt_host_networks:
+      ovirt_host_network:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
         interface: "{{ hostvars[item]['internal_eth'] }}"

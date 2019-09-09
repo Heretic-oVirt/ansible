@@ -30,13 +30,22 @@
   remote_user: root
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
-    - name: Restart CTDB and Gluster-block services
+    - name: Restart Gluster-block services
+      # TODO: given the problems with Gluster-block, we interpret an empty list of LUNs as a choice for disabling Gluster-block altogether - revert when fixed
       systemd:
         name: "{{ item }}"
         state: restarted
       with_items:
         - gluster-block-target.service
         - gluster-blockd.service
+      loop_control:
+        pause: 5
+      when: (hvp_lun_sizes | length) > 0
+    - name: Restart CTDB services
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
         - gluster-lock.mount
         - ctdb.service
       loop_control:
@@ -87,20 +96,40 @@
         username: "{{ username }}"
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
-    - name: Put all non-Engine storage domains out of maintenance
-      ovirt_storage_domains:
+    - name: Put main Datacenter storage domain out of maintenance
+      ovirt_storage_domain:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ vmstore_sd_name }}"
+        data_center: "{{ dc_name }}"
+        state: present
+        wait: true
+      retries: 60
+      delay: 30
+      register: sdenable_result
+      until: sdenable_result.storagedomain.status == "active"
+    - name: Wait for Datacenter to be operational
+      ovirt_datacenter:
+        auth: "{{ ovirt_auth }}"
+        name: "{{ dc_name }}"
+        state: present
+        wait: true
+      retries: 60
+      delay: 30
+      register: dcenable_result
+      until: dcenable_result.datacenter.status == "up"
+    - name: Put all remaining storage domains out of maintenance
+      ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
         data_center: "{{ dc_name }}"
         state: present
         wait: true
       with_items:
-        - "{{ vmstore_sd_name }}"
         - "{{ iso_sd_name }}"
     - name: Startup all guest VMs
       # Note: ignoring errors to allow for non-existent VMs
       # TODO: check for VM existence and skip if missing
-      ovirt_vms:
+      ovirt_vm:
         auth: "{{ ovirt_auth }}"
         state: running
         cluster: "{{ cluster_name }}"

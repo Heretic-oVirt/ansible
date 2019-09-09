@@ -23,7 +23,7 @@
       # Note: ignoring errors to allow for non-existent VMs
       # TODO: check for VM existence and skip if missing
       # TODO: find a way to reverse the list of VMs to shutdown them in the proper dependency order
-      ovirt_vms:
+      ovirt_vm:
         auth: "{{ ovirt_auth }}"
         state: stopped
         cluster: "{{ cluster_name }}"
@@ -32,7 +32,7 @@
       ignore_errors: true
       with_items: "{{ guest_vms }}"
     - name: Put all storage domains in maintenance except for Engine domain
-      ovirt_storage_domains:
+      ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
         name: "{{ item }}"
         data_center: "{{ dc_name }}"
