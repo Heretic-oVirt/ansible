@@ -97,35 +97,40 @@
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
     - name: Put main Datacenter storage domain out of maintenance
+      # Note: the following actually returns with storage domain still in maintenance
+      # TODO: should wait for storage domain to exit maintenance
+      # TODO: unfortunately status doesn't get correctly registered for use with until
+      # TODO: unfortunately ovirt_storage_domain_facts does not return status property
       ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
         name: "{{ vmstore_sd_name }}"
         data_center: "{{ dc_name }}"
         state: present
         wait: true
-      retries: 60
-      delay: 30
-      register: sdenable_result
-      until: sdenable_result.storagedomain.status == "active"
-    - name: Wait for Datacenter to be operational
-      ovirt_datacenter:
+    - name: Wait until main Datacenter actually gets operational
+      # Note: when main storage domain exits maintenance datacenter goes operational
+      ovirt_datacenter_facts:
         auth: "{{ ovirt_auth }}"
-        name: "{{ dc_name }}"
-        state: present
-        wait: true
+        pattern: "name={{ dc_name }}"
       retries: 60
       delay: 30
-      register: dcenable_result
-      until: dcenable_result.datacenter.status == "up"
-    - name: Put all remaining storage domains out of maintenance
+      until: "ovirt_datacenters[0].status == 'up'"
+    - name: Put ISO storage domain out of maintenance
+      # Note: the following may fail because of temporary NFS access problems from nodes - retrying to work around
+      # Note: the following actually returns with storage domain still in maintenance
+      # TODO: should wait for storage domain to exit maintenance
+      # TODO: unfortunately status doesn't get correctly registered for use with until
+      # TODO: unfortunately ovirt_storage_domain_facts does not return status property
       ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
-        name: "{{ item }}"
+        name: "{{ iso_sd_name }}"
         data_center: "{{ dc_name }}"
         state: present
         wait: true
-      with_items:
-        - "{{ iso_sd_name }}"
+      register: isosdenable_result
+      retries: 60
+      delay: 30
+      until: isosdenable_result is succeeded
     - name: Startup all guest VMs
       # Note: ignoring errors to allow for non-existent VMs
       # TODO: check for VM existence and skip if missing
