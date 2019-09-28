@@ -1,0 +1,6 @@
+[Service]
+ExecStart=/usr/bin/stunnel /etc/stunnel/relay-smtps.conf
+StandardInput=socket
+Type=forking
+User=root
+PrivateTmp=true

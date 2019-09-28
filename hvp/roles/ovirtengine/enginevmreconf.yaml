@@ -30,13 +30,33 @@
       set_fact:
         grub_cfg_file: "{{ uefipresence_result.stat.exists | ternary('/etc/grub2-efi.cfg','/etc/grub2.cfg') }}"
         grub_files_dir: "{{ uefipresence_result.stat.exists | ternary('/boot/efi/EFI/redhat','/boot/grub2') }}"
-    - name: Find CentOS-hosted oVirt and GlusterFS dependency repositories
-      shell: grep -o '\[ovirt-.*centos.*\]' /etc/yum.repos.d/ovirt-*-dependencies.repo  | tr -d '[]'
-      register: centosovirtrepos_result
     - name: Perform a preliminary configuration backup
       command: "tar czf /root/{{ ansible_nodename }}-original-conf.tar.gz /etc {{ grub_files_dir }}"
       args:
         creates: "/root/{{ ansible_nodename }}-original-conf.tar.gz"
+    - name: Find CentOS-hosted oVirt and GlusterFS dependency repositories
+      shell: grep -o '\[ovirt-.*centos.*\]' /etc/yum.repos.d/ovirt-*-dependencies.repo  | tr -d '[]'
+      register: centosovirtrepos_result
+    - name: Determine use of custom URLs for repos
+      set_fact:
+        custom_yum_conf: "{{ ((hvp_repo_baseurl | length > 0) or (hvp_repo_gpgkey | length > 0)) }}"
+    - name: Disable use of mirrors in all repos
+      block:
+        - name: Disable mirrorlist and metalink directives
+          shell: "sed -i -e 's/^mirrorlist/#mirrorlist/ ; s/^metalink/#metalink/ ; s/^#baseurl/baseurl/' $(find /etc/yum.repos.d -type f -name '*.repo' -print)"
+        - name: Disable fastestmirror Yum plugin
+          shell: "sed -i -e 's/^enabled.*/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf"
+      when: custom_yum_conf
+    - name: Apply custom repo URLs in predefined repos
+      vars:
+        baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      with_items: "{{ hvp_repo_baseurl | map(attribute='name') | list }}"
+    - name: Apply custom gpgkey URLs in predefined repos
+      vars:
+        gpgkey: "{{ (hvp_repo_gpgkey | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      with_items: "{{ hvp_repo_gpgkey | map(attribute='name') | list }}"
     - name: Install YUM-related packages
       vars:
         hvp_yum_related_packages:
@@ -48,6 +68,9 @@
         state: installed
         disablerepo: '*'
         enablerepo: 'base,updates'
+    - name: Disable use of deltarpm
+      command: yum-config-manager --save --setopt='deltarpm=0'
+      register: disabledeltarpm_result
     - name: Make YUM more robust in presence of network problems
       command: yum-config-manager --save --setopt='retries=30' --setopt='timeout=60'
     - name: Mark CentOS-hosted repositories as higher priority than others
@@ -65,28 +88,39 @@
     - name: Customize EPEL repo inclusions
       shell: "sed -i -e 's/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/epel-release,/' -e 's/epel-release,/epel-release,logcheck,perl-mime-construct,perl-Proc-WaitStat,perl-IPC-Signal,lockfile-progs,haveged,hping3,p7zip*,arj,pwgen,pdsh*,nmon,/' /etc/yum.repos.d/ovirt-*-dependencies.repo"
       register: epelrepoedit_result
-    - name: Disable EPEL repo use of DNS-based balanced mirrors
-      shell: "sed -i -e 's>http://download.fedoraproject.org/pub/epel/7/>http://www.nic.funet.fi/pub/mirrors/fedora.redhat.com/pub/epel/7/>g' /etc/yum.repos.d/ovirt-*-dependencies.repo"
-      register: epelrepodirect_result
     - name: Conditionally add oVirt nightly snaphot repos
       # Note: adding these manually since the release package may have disappeared
       # Note: adding skip_if_unavailable since these repos too seem to disappear after a while
+      vars:
+        baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item.name + '$') | list | length > 0) | ternary((hvp_repo_baseurl | selectattr('name', 'match', '^' + item.name + '$') | list | first ).url, item.baseurl) }}"
       yum_repository:
         name: "{{ item.name }}"
         description: "{{ item.description }}"
         state: present
         enabled: yes
         skip_if_unavailable: yes
-        baseurl: "{{ item.baseurl }}"
+        baseurl: "{{ baseurl }}"
         gpgcheck: no
       with_items:
         - { name: "ovirt-{{ compatibility_version }}-snapshot", description: "oVirt {{ compatibility_version }} - Nightly snapshot", baseurl: "https://resources.ovirt.org/pub/ovirt-{{ compatibility_version }}-snapshot/rpm/el$releasever/" }
         - { name: "ovirt-{{ compatibility_version }}-snapshot-static", description: "oVirt {{ compatibility_version }} - Nightly snapshot static", baseurl: "https://resources.ovirt.org/pub/ovirt-{{ compatibility_version }}-snapshot-static/rpm/el$releasever/" }
       when: hvp_ovirt_nightly_mode
     - name: Add HVP release package
+      vars:
+        baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^hvp$') | list | length > 0) | ternary((hvp_repo_baseurl | selectattr('name', 'match', '^hvp$') | list | first ).url | regex_replace('\\$releasever', '7') | regex_replace('\\$basearch', 'x86_64'), 'https://dangerous.ovirt.life/hvp-repos/el7/hvp/') }}"
       yum:
-        name: https://dangerous.ovirt.life/hvp-repos/el7/hvp/x86_64/hvp-release-7-5.noarch.rpm
+        name: "{{ baseurl }}hvp-release-latest.noarch.rpm"
         state: installed
+    - name: Apply custom repo URLs in newly added repos
+      vars:
+        baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      with_items: "{{ hvp_repo_baseurl | map(attribute='name') | list }}"
+    - name: Apply custom gpgkey URLs in newly added repos
+      vars:
+        gpgkey: "{{ (hvp_repo_gpgkey | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      with_items: "{{ hvp_repo_gpgkey | map(attribute='name') | list }}"
     - name: Enable HVP RHV repo
       command: yum-config-manager --enable hvp-rhv-rebuild
       register: enablehvprhvrebuild_result
@@ -127,12 +161,6 @@
       command: yum-config-manager --save --setopt='hvp-ansible-rebuild.priority=50'
       register: preferhvpansiblerebuild_result
       when: not hvp_orthodox_mode
-    - name: Disable use of mirrors in all repos
-      shell: "sed -i -e 's/^mirrorlist/#mirrorlist/ ; s/^metalink/#metalink/ ; s/^#baseurl/baseurl/' $(find /etc/yum.repos.d -type f -name '*.repo' -print)"
-      register: disablemirrors_result
-    - name: Enable use of deltarpm
-      command: yum-config-manager --save --setopt='deltarpm=1'
-      register: enabledeltarpm_result
     - name: Check whether Engine upgrade will be needed
       command: engine-upgrade-check
       ignore_errors: yes
@@ -152,6 +180,18 @@
         name: '*'
         state: latest
         update_cache: yes
+      when: hvp_upgrade_engine
+    - name: Apply custom repo URLs in newly upgraded repos
+      vars:
+        baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      with_items: "{{ hvp_repo_baseurl | map(attribute='name') | list }}"
+      when: hvp_upgrade_engine
+    - name: Apply custom gpgkey URLs in newly upgraded repos
+      vars:
+        gpgkey: "{{ (hvp_repo_gpgkey | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      with_items: "{{ hvp_repo_gpgkey | map(attribute='name') | list }}"
       when: hvp_upgrade_engine
     - name: Upgrade Python oVirt SDK anyway
       # Note: official oVirt 4.1 Engine appliance vm has an older version, incompatible with Ansible 2.5
@@ -181,6 +221,7 @@
           - unix2dos
           - screen
           - telnet
+          - ftp
           - tree
           - iptraf
           - iptstate
@@ -322,7 +363,9 @@
     - name: Configure boot-time time-sync sources by means of NTPdate
       copy:
         content: |
-          0.centos.pool.ntp.org
+          {% for host in hvp_engine_ntp_sources %}
+          {{ host }}
+          {% endfor %}
         dest: /etc/ntp/step-tickers
         owner: root
         group: root
@@ -343,6 +386,7 @@
         group: root
         mode: 0644
         backup: no
+      register: addntpdatepolicy_result
     - name: Compile and load the SELinux local module for NTPdate
       args:
         chdir: /etc/selinux/local
@@ -352,10 +396,34 @@
         - 'checkmodule -M -m -o myntpdate.mod myntpdate.te'
         - 'semodule_package -o myntpdate.pp -m myntpdate.mod'
         - 'semodule -i myntpdate.pp'
+      when: addntpdatepolicy_result.changed
     - name: Enable NTPdate on boot
       systemd:
         name: ntpdate
         enabled: yes
+    - name: Remove default run-time time-sync sources in Chrony
+      replace:
+        path: /etc/chrony.conf
+        regexp: '^(server.*)$'
+        replace: '#\1'
+      register: removedefaultchronysources_result
+    - name: Configure run-time time-sync sources in Chrony
+      blockinfile:
+        state: present
+        path: /etc/chrony.conf
+        create: no
+        insertafter: ""
+        marker: "# {mark} NTP SOURCES ANSIBLE MANAGED BLOCK"
+        block: |
+          {% for host in hvp_engine_ntp_sources %}
+          server {{ host }} iburst
+          {% endfor %}
+      register: configurechronysources_result
+    - name: Apply Chrony reconfiguration
+      systemd:
+        name: chronyd
+        state: restarted
+      when: removedefaultchronysources_result.changed or configurechronysources_result.changed
     - name: Configure OpenSSH server
       lineinfile:
         state: present
@@ -591,6 +659,53 @@
       command: newaliases
       register: newaliases_result
       when: aliases_result.changed
+    - name: Configure mail relay
+      block:
+        - name: Use SMTPS for mail relay
+          block:
+            - name: Set mail relay
+              set_fact:
+                actual_email_relay: "{{ hvp_email_relay }}"
+                hvp_email_relay: '[127.0.0.1]:11125'
+            - name: Prepare Stunnel configuration for SMTPS mail relay
+              template:
+                src: templates/relay-smtps.conf.j2
+                dest: /etc/stunnel/relay-smtps.conf
+                owner: root
+                group: root
+                mode: 0644
+                backup: yes
+            - name: Prepare systemd socket for SMTPS mail relay
+              copy:
+                src: files/relay-smtps.socket
+                dest: /etc/systemd/system/relay-smtps.socket
+                owner: root
+                group: root
+                mode: 0644
+                backup: yes
+              register: systemdsocketconf_result
+            - name: Prepare systemd template service for SMTPS mail relay
+              copy:
+                src: files/relay-smtps@.service
+                dest: /etc/systemd/system/relay-smtps@.service
+                owner: root
+                group: root
+                mode: 0644
+                backup: yes
+              register: systemdserviceconf_result
+            - name: Reload systemd configuration
+              command: systemctl daemon-reload
+              when: systemdsocketconf_result.changed or systemdserviceconf_result.changed
+            - name: Enable systemd socket for SMTPS mail relay
+              systemd:
+                name: relay-smtps.socket
+                enabled: true
+            - name: Configure Postfix to avoid STARTTLS
+              command: "postconf -e 'smtp_use_tls = no'"
+          when: (hvp_email_relay_use_smtps | bool)
+        - name: Configure Postfix for mail relay
+          command: "postconf -e 'relayhost = {{ hvp_email_relay }}'"
+      when: "(hvp_email_relay | trim) != ''"
     - name: Mask and stop dangerous or noisy services
       systemd:
         name: "{{ item }}"
