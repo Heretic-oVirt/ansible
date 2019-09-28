@@ -24,6 +24,7 @@ hvp_engine_ip: "{{ lookup('dig', hvp_engine_name + '.' + hvp_engine_domainname +
 hvp_engine_netprefix: "24"
 # TODO: derive the following by means of Ansible DNS lookup on ovirtnodes names
 hvp_engine_dnslist: 172.20.10.10,172.20.10.11,172.20.10.12
+hvp_engine_ntp_sources: "{{ groups['ovirtnodes'] }}"
 # Note: generally, we try to use an independent pingable IP (central managed switch console interface) as "gateway" for oVirt setup
 # Note: when missing an independent pingable IP (apart from the default gateway) repeat the default gateway IP here
 hvp_switch_ip: "172.20.10.200"
