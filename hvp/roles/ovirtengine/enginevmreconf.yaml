@@ -50,12 +50,12 @@
     - name: Apply custom repo URLs in predefined repos
       vars:
         baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
-      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ baseurl }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
       with_items: "{{ hvp_repo_baseurl | map(attribute='name') | list }}"
     - name: Apply custom gpgkey URLs in predefined repos
       vars:
         gpgkey: "{{ (hvp_repo_gpgkey | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
-      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ gpgkey }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
       with_items: "{{ hvp_repo_gpgkey | map(attribute='name') | list }}"
     - name: Install YUM-related packages
       vars:
@@ -114,12 +114,12 @@
     - name: Apply custom repo URLs in newly added repos
       vars:
         baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
-      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ baseurl }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
       with_items: "{{ hvp_repo_baseurl | map(attribute='name') | list }}"
     - name: Apply custom gpgkey URLs in newly added repos
       vars:
         gpgkey: "{{ (hvp_repo_gpgkey | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
-      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ gpgkey }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
       with_items: "{{ hvp_repo_gpgkey | map(attribute='name') | list }}"
     - name: Enable HVP RHV repo
       command: yum-config-manager --enable hvp-rhv-rebuild
@@ -184,13 +184,13 @@
     - name: Apply custom repo URLs in newly upgraded repos
       vars:
         baseurl: "{{ (hvp_repo_baseurl | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
-      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^baseurl=.*$%baseurl={{ baseurl }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
       with_items: "{{ hvp_repo_baseurl | map(attribute='name') | list }}"
       when: hvp_upgrade_engine
     - name: Apply custom gpgkey URLs in newly upgraded repos
       vars:
         gpgkey: "{{ (hvp_repo_gpgkey | selectattr('name', 'match', '^' + item + '$') | list | first).url }}"
-      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ url }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
+      shell: "sed -i -e '/\\[{{ item }}\\]/,/\\[.*\\]/s%^gpgkey=.*$%gpgkey={{ gpgkey }}%' $(grep -l '^\\[{{ item }}\\]' $(find /etc/yum.repos.d -type f -name '*.repo' -print) | head -1 )"
       with_items: "{{ hvp_repo_gpgkey | map(attribute='name') | list }}"
       when: hvp_upgrade_engine
     - name: Upgrade Python oVirt SDK anyway
