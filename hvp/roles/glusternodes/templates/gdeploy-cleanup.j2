@@ -8,6 +8,7 @@
 
 # TODO: add LVM reset actions (create a fact gathering module hvp_gluster_disks then cycle among hosts and disks)
 # TODO: add VDO reset actions (create a fact gathering module hvp_vdo_disks then cycle among hosts and disks)
+# TODO: add Gluster-block reset actions
 
 [volume1]
 action=delete
@@ -47,6 +48,11 @@ ignore_volume_errors=yes
 [volume8]
 action=delete
 volname={{ hvp_backup_volume_name }}
+ignore_volume_errors=yes
+
+[volume9]
+action=delete
+volname={{ hvp_shared_storage_volume_name }}
 ignore_volume_errors=yes
 
 [peer]
