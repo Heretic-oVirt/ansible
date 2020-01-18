@@ -20,9 +20,8 @@
 
    log file = /var/log/samba/log.%m
    log level = 2
-   max log size = 50
-   syslog = 1
-   syslog only = No
+   max log size = 5000
+   logging= syslog file
 
    map to guest = Bad user
    username map = /etc/samba/smbusers
@@ -64,6 +63,9 @@
    guest ok = no
    valid users = %S
    vfs objects = shadow_copy2 acl_xattr recycle glusterfs
+   shadow:snapdir = /.snaps
+   shadow:basedir = /
+   shadow:sort = desc
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
@@ -95,6 +97,9 @@
    available = yes
    guest ok = no
    vfs objects = shadow_copy2 acl_xattr recycle glusterfs
+   shadow:snapdir = /.snaps
+   shadow:basedir = /
+   shadow:sort = desc
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
@@ -109,6 +114,9 @@
    available = yes
    guest ok = no
    vfs objects = shadow_copy2 acl_xattr recycle glusterfs
+   shadow:snapdir = /.snaps
+   shadow:basedir = /
+   shadow:sort = desc
    recycle:keeptree = no
    recycle:versions = yes
    #glusterfs:loglevel = 7
