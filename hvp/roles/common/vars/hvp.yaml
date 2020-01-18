@@ -85,7 +85,11 @@ hvp_blockshare_arbitersize: "10GB"
 hvp_backup_volume_name: backup
 hvp_backup_size: "1024GB"
 hvp_backup_arbitersize: "10GB"
+hvp_shared_storage_volume_name: gluster_shared_storage
+hvp_shared_storage_size: "1GB"
 hvp_thinpool_chunksize: "1536k"
+hvp_share_snapshot_max: "60"
+hvp_share_snapshot_schedule: "15 * * * *"
 
 ## HVP Gluster-block settings
 hvp_lun_sizes:
@@ -107,6 +111,7 @@ host_password: 'HVP_dem0'
 #host_bmc_password: 'HVP_dem0'
 
 # Env:
+engine_name: "HostedEngine"
 ## Datacenter:
 # TODO: forcing default name since any personalization does not get into appliance cloudinit and causes mismatch - open Bugzilla ticket and revert
 hvp_dc_name: HVPDataCenter
@@ -165,10 +170,12 @@ vms_network_domainname: "{{ hvp_lan_domainname }}"
 vms_network: "{{ got_lan_network | ternary(lan_network, mgmt_network) }}"
 # TODO: dynamically extract the following from mirrored kickstart files
 guest_vms:
-  - { vm_kickstart_file: 'hvp-dc-c7.ks', vm_name: 'DomainController', vm_comment: 'Active Directory Domain Controller', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 60GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('220') | ipaddr('address') }}", vm_service_port: 53 }
+  - { vm_kickstart_file: 'hvp-dc-c7.ks', vm_name: 'DomainController', vm_comment: 'Active Directory Domain Controller', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 80GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('220') | ipaddr('address') }}", vm_service_port: 53 }
   - { vm_kickstart_file: 'hvp-db-c7.ks', vm_name: 'DatabaseServer', vm_comment: 'Database Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 4GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('230') | ipaddr('address') }}", vm_service_port: 80 }
+  - { vm_kickstart_file: 'hvp-web-c7.ks', vm_name: 'WebServer', vm_comment: 'Web Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 4GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('210') | ipaddr('address') }}", vm_service_port: 80 }
   - { vm_kickstart_file: 'hvp-pr-c7.ks', vm_name: 'PrintServer', vm_comment: 'Print Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 80GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('190') | ipaddr('address') }}", vm_service_port: 445 }
   - { vm_kickstart_file: 'hvp-vd-c7.ks', vm_name: 'TerminalServer', vm_comment: 'Remote Desktop Server', vm_delete_protected: yes, vm_high_availability: false, vm_memory: 8GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 120GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('240') | ipaddr('address') }}", vm_service_port: 22 }
+  - { vm_kickstart_file: 'hvp-tmpl-c7.ks', vm_name: 'TemplateServer', vm_comment: 'Template Server', vm_delete_protected: no, vm_high_availability: false, vm_memory: 2GiB, vm_cpu_cores: 1, vm_cpu_sockets: 1, vm_cpu_shares: 1024, vm_type: 'server', vm_operating_system: 'rhel_7x64', vm_disk_size: 80GiB, vm_network_name: "{{ vms_network_name }}", vm_service_ip: "{{ vms_network | ipaddr('180') | ipaddr('address') }}", vm_service_port: 22 }
 
 ## HVP AD-related settings
 hvp_adjoin_domain: ad.mgmt.private
