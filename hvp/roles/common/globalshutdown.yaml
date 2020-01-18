@@ -22,15 +22,14 @@
     - name: Shutdown all guest VMs
       # Note: ignoring errors to allow for non-existent VMs
       # TODO: check for VM existence and skip if missing
-      # TODO: find a way to reverse the list of VMs to shutdown them in the proper dependency order
       ovirt_vm:
         auth: "{{ ovirt_auth }}"
         state: stopped
         cluster: "{{ cluster_name }}"
         name: "{{ item.vm_name }}"
         wait: true
-      ignore_errors: true
-      with_items: "{{ guest_vms }}"
+      ignore_errors: yes
+      with_items: "{{ guest_vms | reverse | list }}"
     - name: Put all storage domains in maintenance except for Engine domain
       ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
@@ -55,10 +54,14 @@
       include_vars:
         file: "../common/vars/hvp.yaml"
     - name: Activate global maintenance
+      # Note: sometimes entering global maintenance requires multiple attempts
       vars:
         ansible_ssh_pipelining: no
-      command: hosted-engine --set-maintenance --mode=global
+      shell: "hosted-engine --set-maintenance --mode=global; sleep 3; hosted-engine --vm-status"
+      retries: 60
+      delay: 30
       register: enterglobalmaintenance_result
+      until: enterglobalmaintenance_result.stdout.find('GLOBAL MAINTENANCE') != -1
 - name: Perform Engine shutdown
   hosts: ovirtengine
   remote_user: root
@@ -70,25 +73,29 @@
   remote_user: root
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
-    - name: Stop oVirt HA services
+    - name: Stop/disable oVirt HA services
       systemd:
         name: "{{ item }}"
         state: stopped
+        enabled: no
       with_items:
         - ovirt-ha-agent.service
         - ovirt-ha-broker.service
-    - name: Stop CTDB and Gluster-block services
+    - name: Stop/disable CTDB and Gluster-block services
       systemd:
         name: "{{ item }}"
         state: stopped
+        enabled: no
       with_items:
         - ctdb.service
         - gluster-lock.mount
+        - var-run-gluster-shared_storage.mount
         - gluster-blockd.service
         - gluster-block-target.service
     - name: Unmount Engine domain
       shell: "for mountpoint in $(mount | grep rhev | awk '{print $3}'); do umount -l -f ${mountpoint} ; done"
 - name: Stop GlusterFS volumes
+  # Note: no need to stop/disable the GlusterFS glusterd service
   hosts: ovirt_master
   remote_user: root
   tasks:
