@@ -63,19 +63,20 @@
       args:
         executable: /usr/bin/expect
     - name: Join AD domain
-      # TODO: join fails when specifying OU - find out why and restore proper functionality
-      #shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createcomputer="File Servers"
-      shell: net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)"
+      # TODO: joining with a custom OU fails similar to https://bugzilla.samba.org/show_bug.cgi?id=14007 - find out why and restore proper functionality - working around by preseeding computer object in DC
+      #shell: 'net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createupn="host/{{ hvp_storage_name }}.{{ hvp_adjoin_domain }}@{{ hvp_adjoin_realm }}" createcomputer="File Servers"'
+      shell: 'net ads join -k osName="$(lsb_release -si)" osVer="$(lsb_release -sr)" createupn="host/{{ hvp_storage_name }}.{{ hvp_adjoin_domain }}@{{ hvp_adjoin_realm }}"'
       register: join_result
     - name: Add further Kerberos SPNs
       # TODO: either move the keytab in a shared area or replicate it on all nodes
-      # TODO: find a way to keep it up-to-date
+      # TODO: find a way to change computer password and keep keytab up-to-date - maybe schedule a cron job every 5 days on each node (shifted)
       # Note: the keytab mainly is needed by NFS-Ganesha for kerberized NFSv4 serving
-      shell: "net ads keytab add {{ item }} -k"
+      shell: "net ads keytab add_update_ads {{ item }}/{{ hvp_storage_name }}.{{ hvp_adjoin_domain }}@{{ hvp_adjoin_realm }} -k"
       register: addspn_result
       with_items:
         - cifs
         - nfs
+    # TODO: add DNS A/PTR registration with: net ads dns register... - since PTR is unsupported, working around by preseeding DNS entries in DC
     - name: Remove Kerberos ticket
       command: kdestroy
       register: kdestroy_result
@@ -104,6 +105,7 @@
       # TODO: the following does not find the specified identity - find out why and correct
       shell: "net sam rights grant '{{ hvp_netbios_domainname }}\\Domain Admins' SeDiskOperatorPrivilege -k"
       register: diskprivilegegrant_result
+      ignore_errors: yes
     - name: Remove Kerberos ticket
       command: kdestroy
       register: kdestroy_result
