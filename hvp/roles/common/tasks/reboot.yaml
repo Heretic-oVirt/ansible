@@ -9,5 +9,5 @@
   wait_for_connection:
     delay: 50
     sleep: 5
-    timeout: 300
+    timeout: "{{ reboot_timeout | default(300) }}"
 ...
