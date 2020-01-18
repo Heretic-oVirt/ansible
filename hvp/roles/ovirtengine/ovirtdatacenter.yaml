@@ -36,10 +36,37 @@
           path: "{{ vmstore_sd_path }}"
           mount_options: "{{ vmstore_sd_mountopts }}"
         wait: true
-    - name: Wait to allow time for the HostedEngine vm to be registered and up
-      # TODO: replace this with a proper wait for Engine vm appearance (create a custom module)
-      wait_for:
-        timeout: 300
+    - name: Wait for the HostedEngine vm to be registered and up
+      # Note: checking with ovirt_vm module would interfer with self-registration
+      # Note: looping on API call to wait for self-registration to succeed
+      uri:
+        url:
+          "{{ url }}/vms?max=1&search=name%3D{{ engine_name }}"
+        user: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: false
+        method: GET
+        return_content: true
+        status_code: 200
+        headers:
+          Accept: application/json
+      no_log: true
+      ignore_errors: yes
+      register: searchengine_result
+      retries: 60
+      delay: 30
+      until: (searchengine_result.json.vm[0].status is defined) and (searchengine_result.json.vm[0].status == "up")
+    - name: Add comment to the HostedEngine vm
+      ovirt_vm:
+        auth: "{{ ovirt_auth }}"
+        state: present
+        cluster: "{{ cluster_name }}"
+        name: "{{ engine_name }}"
+        comment: "oVirt Engine"
+      register: enginecomment_result
+      until: enginecomment_result is succeeded
+      retries: 10
+      delay: 30
     - name: Add the remaining nodes to the oVirt Cluster
       ovirt_host:
         auth: "{{ ovirt_auth }}"
