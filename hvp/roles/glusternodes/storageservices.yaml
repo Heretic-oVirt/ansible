@@ -109,6 +109,18 @@
         enabled: true
         state: started
         no_block: no
+    - name: Enable and start the wait service for Gluster shared storage volume
+      systemd:
+        name: gluster-shared-storage-wait-online
+        enabled: true
+        state: started
+        no_block: no
+    - name: Enable and start the local mounting of the Gluster shared storage volume
+      systemd:
+        name: var-run-gluster-shared_storage.mount
+        enabled: true
+        state: started
+        no_block: no
     - name: Enable and start the RT bandwidth configuration
       systemd:
         name: cgroup-rt-bandwidth
@@ -128,7 +140,9 @@
         enabled: true
         state: started
         no_block: no
-- name: Configure Samba authentication
+    - name: Initialize the snapshot scheduler
+      command: snap_scheduler.py init
+- name: Configure Samba authentication and scheduled snapshot
   hosts: gluster_master
   remote_user: root
   tasks:
@@ -137,4 +151,12 @@
     - name: Configure local root user
       shell: "echo -e '{{ ansible_ssh_pass }}\\n{{ ansible_ssh_pass }}\\n' | smbpasswd -s -a root"
       register: smbpasswd_result
+    - name: Configure scheduled snapshots
+      command: '{{ item }}'
+      with_items:
+        - "snap_scheduler.py enable"
+        - "gluster --mode=script snapshot config {{ hvp_winshare_volume_name }} snap-max-hard-limit {{ hvp_share_snapshot_max }} auto-delete enable"
+        - "gluster --mode=script snapshot config {{ hvp_unixshare_volume_name }} snap-max-hard-limit {{ hvp_share_snapshot_max }} auto-delete enable"
+        - "snap_scheduler.py add 'Windows_schedule' '{{ hvp_share_snapshot_schedule }}' {{ hvp_winshare_volume_name }}"
+        - "snap_scheduler.py add 'Unix_schedule' '{{ hvp_share_snapshot_schedule }}' {{ hvp_unixshare_volume_name }}"
 ...
