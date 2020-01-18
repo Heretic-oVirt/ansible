@@ -49,6 +49,7 @@ yes
 # Note: unixshare (thin {{ hvp_unixshare_size }}) LVs will host the Ganesha-NFS (currently Gluster-NFS) share Gluster volume bricks
 # Note: blockshare (thin {{ hvp_blockshare_size }}) LVs will host the Gluster-Block share Gluster volume bricks
 # Note: backup (thin {{ hvp_backup_size }}) LVs will host the Bareos Gluster volume bricks
+# Note: shared_storage (thick {{ hvp_shared_storage_size }} - no arbiter) LVs will host the shared storage Gluster volume bricks
 # Note:
 #  every suitable disk used will be made into the single PV of a VG
 #  if we have only one node than it will work in replica-1
@@ -82,7 +83,7 @@ yes
 action=create
 devices={{ node_disk }}
 names={{ vdo_name }}
-logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int) + (hvp_shared_storage_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
 blockmapcachesize=128M
 readcache=enabled
 readcachesize=20M
@@ -190,6 +191,15 @@ mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}10:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk1
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% elif disk_count | int == 2 %}
@@ -224,7 +234,7 @@ slabsize=32G
 action=create
 devices={{ share_disk }}
 names={{ share_vdo_name }}
-logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int) + (hvp_shared_storage_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
 blockmapcachesize=128M
 readcache=enabled
 readcachesize=20M
@@ -352,6 +362,15 @@ mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}11:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk2
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% elif disk_count | int >= 3 %}
@@ -390,7 +409,7 @@ slabsize=32G
 action=create
 devices={{ share_disk }}
 names={{ share_vdo_name }}
-logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int) + (hvp_shared_storage_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
 blockmapcachesize=128M
 readcache=enabled
 readcachesize=20M
@@ -549,6 +568,15 @@ poolname=lvthinpool
 lvname=backup
 mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_size }}
+ignore_lv_errors=no
+
+[lv{{ node_index }}12:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk2
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
 ignore_lv_errors=no
 
 {% endfor %}
@@ -577,7 +605,7 @@ ignore_lv_errors=no
 action=create
 devices={{ node_disk }}
 names={{ vdo_name }}
-logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+logicalsize={{ (((hvp_enginedomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_vmstoredomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_isodomain_size | regex_replace('[^0-9]*', '') | int) + (hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int) + (hvp_shared_storage_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
 blockmapcachesize=128M
 readcache=enabled
 readcachesize=20M
@@ -685,6 +713,15 @@ mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}10:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk1
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% elif disk_count | int == 2 %}
@@ -719,7 +756,7 @@ slabsize=32G
 action=create
 devices={{ share_disk }}
 names={{ share_vdo_name }}
-logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int) + (hvp_shared_storage_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
 blockmapcachesize=128M
 readcache=enabled
 readcachesize=20M
@@ -847,6 +884,15 @@ mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_size }}
 ignore_lv_errors=no
 
+[lv{{ node_index }}11:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk2
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
+ignore_lv_errors=no
+
 {% endfor %}
 
 {% elif disk_count | int >= 3 %}
@@ -885,7 +931,7 @@ slabsize=32G
 action=create
 devices={{ share_disk }}
 names={{ share_vdo_name }}
-logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
+logicalsize={{ (((hvp_ctdb_size | regex_replace('[^0-9]*', '') | int) + (hvp_winshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_unixshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_blockshare_size | regex_replace('[^0-9]*', '') | int) + (hvp_backup_size | regex_replace('[^0-9]*', '') | int) + (hvp_shared_storage_size | regex_replace('[^0-9]*', '') | int)) * 1.2) | int }}G
 blockmapcachesize=128M
 readcache=enabled
 readcachesize=20M
@@ -1044,6 +1090,15 @@ poolname=lvthinpool
 lvname=backup
 mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_size }}
+ignore_lv_errors=no
+
+[lv{{ node_index }}12:{{ groups['glusternodes'][node_index] }}]
+action=create
+vgname=vgdisk2
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
 ignore_lv_errors=no
 
 {% endfor %}
@@ -1151,6 +1206,15 @@ poolname=lvthinpool
 lvname=backup
 mount=/gluster_bricks/backup/brick1
 virtualsize={{ hvp_backup_arbitersize }}
+ignore_lv_errors=no
+
+[lv210:{{ groups['glusternodes'][2] }}]
+action=create
+vgname=vgarbiter
+lvtype=thick
+lvname=sharedstorage
+mount=/gluster_bricks/sharedstorage/brick1
+size={{ hvp_shared_storage_size }}
 ignore_lv_errors=no
 
 {% else %}
@@ -1306,11 +1370,11 @@ force=yes
 
 {% if groups['glusternodes'] | length == 1 %}
 # Note: single node does not support cluster.shd-max-threads
-key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,performance.cache-samba-metadata,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
-value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,on,on,on,on
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,performance.cache-samba-metadata,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir,features.uss
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,on,on,on,on,enable
 {% else %}
-key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,performance.cache-samba-metadata,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
-value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,on,on,on,on
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,performance.cache-samba-metadata,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir,features.uss
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,on,on,on,on,enable
 {% endif %}
 
 brick_dirs=/gluster_bricks/winshare/brick1/brick
@@ -1333,11 +1397,11 @@ force=yes
 
 {% if groups['glusternodes'] | length == 1 %}
 # Note: single node does not support cluster.shd-max-threads
-key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,nfs.disable,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
-value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,off,on,on,on
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,nfs.disable,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir,features.uss
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,off,on,on,on,enable
 {% else %}
-key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,nfs.disable,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir
-value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,off,on,on,on
+key=group,group,storage.owner-uid,storage.owner-gid,features.shard,features.shard-block-size,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,nfs.disable,features.show-snapshot-directory,performance.readdir-ahead,performance.parallel-readdir,features.uss
+value=metadata-cache,nl-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,off,on,on,on,enable
 {% endif %}
 
 brick_dirs=/gluster_bricks/unixshare/brick1/brick
@@ -1393,4 +1457,28 @@ value=metadata-cache,0,0,on,64MB,32,full,granular,10000,10,off,on,off,on,on,8,of
 {% endif %}
 
 brick_dirs=/gluster_bricks/backup/brick1/brick
+ignore_volume_errors=no
+
+[volume9]
+action=create
+volname={{ hvp_shared_storage_volume_name }}
+transport=tcp
+
+{% if groups['glusternodes'] | length >= 3 %}
+replica=yes
+replica_count=3
+{% endif %}
+
+force=yes
+
+{% if groups['glusternodes'] | length == 1 %}
+# Note: single node does not support cluster.shd-max-threads
+key=storage.owner-uid,storage.owner-gid,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,performance.quick-read,performance.read-ahead,performance.io-cache,cluster.eager-lock
+value=36,36,32,full,granular,10000,10,off,on,off,on,on,off,off,off,enable
+{% else %}
+key=storage.owner-uid,storage.owner-gid,performance.low-prio-threads,cluster.data-self-heal-algorithm,cluster.locking-scheme,cluster.shd-wait-qlength,network.ping-timeout,user.cifs,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,cluster.use-compound-fops,cluster.shd-max-threads,performance.quick-read,performance.read-ahead,performance.io-cache,cluster.eager-lock
+value=36,36,32,full,granular,10000,10,off,on,off,on,on,8,off,off,off,enable
+{% endif %}
+
+brick_dirs=/gluster_bricks/sharedstorage/brick1/brick
 ignore_volume_errors=no
