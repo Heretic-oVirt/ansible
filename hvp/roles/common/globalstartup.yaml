@@ -13,6 +13,8 @@
     - name: Get common vars from files
       include_vars:
         file: "../common/vars/hvp.yaml"
+    - name: Reset failed status on all units
+      command: "systemctl reset-failed"
     - name: Make sure that basic needed services are up and running
       systemd:
         name: "{{ item }}"
@@ -30,36 +32,44 @@
   remote_user: root
   tasks:
     - include_tasks: ../common/tasks/setupkeys.yaml
-    - name: Restart Gluster-block services
+    - name: Restart/enable Gluster-block services
       # TODO: given the problems with Gluster-block, we interpret an empty list of LUNs as a choice for disabling Gluster-block altogether - revert when fixed
       systemd:
         name: "{{ item }}"
         state: restarted
+        enabled: yes
       with_items:
         - gluster-block-target.service
         - gluster-blockd.service
       loop_control:
         pause: 5
       when: (hvp_lun_sizes | length) > 0
-    - name: Restart CTDB services
+    - name: Restart/enable CTDB services
+      # Note: GlusterFS mount units get automatically started as dependencies
       systemd:
-        name: "{{ item }}"
-        state: restarted
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        enabled: yes
       with_items:
-        - gluster-lock.mount
-        - ctdb.service
+        - { name: 'ctdb.service', state: 'stopped' }
+        - { name: 'gluster-lock.mount', state: 'stopped' }
+        - { name: 'var-run-gluster-shared_storage.mount', state: 'stopped' }
+        - { name: 'ctdb.service', state: 'started' }
       loop_control:
-        pause: 5
-    - name: Restart oVirt HA services
+        pause: 10
+    - name: Restart/enable oVirt services
+      # Note: VDSMD and HA broker units get automatically started as dependencies
       systemd:
-        name: "{{ item }}"
-        state: restarted
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+        enabled: yes
       with_items:
-        - ovirt-ha-broker.service
-        - ovirt-ha-agent.service
-        - vdsmd.service
+        - { name: 'ovirt-ha-agent.service', state: 'stopped' }
+        - { name: 'ovirt-ha-broker.service', state: 'stopped' }
+        - { name: 'vdsmd.service', state: 'stopped' }
+        - { name: 'ovirt-ha-agent.service', state: 'started' }
       loop_control:
-        pause: 5
+        pause: 10
 - name: Take oVirt Hosted Engine out of maintenance
   hosts: ovirt_master
   remote_user: root
@@ -68,11 +78,26 @@
     - name: Get common vars from files
       include_vars:
         file: "../common/vars/hvp.yaml"
-    - name: Remove global maintenance
+    - name: Wait for HA daemons to start responding
+      # Note: sometimes immediately checking Engine status gives errors - ignoring errors and waiting
+      # Note: we expect to find the global maintenance status as per previous invocation of our own globalshutdown.yaml playbook
       vars:
         ansible_ssh_pipelining: no
-      command: hosted-engine --set-maintenance --mode=none
+      shell: "hosted-engine --vm-status"
+      ignore_errors: yes
+      retries: 60
+      delay: 30
+      register: getvalidvmstatus_result
+      until: getvalidvmstatus_result.stdout.find('GLOBAL MAINTENANCE') != -1
+    - name: Wait for exit from global maintenance
+      # Note: sometimes exit from global maintenance requires multiple attempts
+      vars:
+        ansible_ssh_pipelining: no
+      shell: "hosted-engine --set-maintenance --mode=none; sleep 3; hosted-engine --vm-status"
+      retries: 60
+      delay: 30
       register: exitglobalmaintenance_result
+      until: exitglobalmaintenance_result.stdout.find('GLOBAL MAINTENANCE') == -1
     - name: Wait for good Engine health
       vars:
         ansible_ssh_pipelining: no
@@ -97,16 +122,17 @@
         password: "{{ password }}"
         ca_file: "{{ ca_file }}"
     - name: Put main Datacenter storage domain out of maintenance
-      # Note: the following actually returns with storage domain still in maintenance
-      # TODO: should wait for storage domain to exit maintenance
-      # TODO: unfortunately status doesn't get correctly registered for use with until
-      # TODO: unfortunately ovirt_storage_domain_facts does not return status property
+      # TODO: wait option notwithstanding, the following would return with storage domain still in maintenance - looping as a workaround - remove when fixed upstream
       ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
         name: "{{ vmstore_sd_name }}"
         data_center: "{{ dc_name }}"
         state: present
         wait: true
+      register: activatevmstoredomain_result
+      retries: 60
+      delay: 30
+      until: activatevmstoredomain_result.storagedomain.status == "active"
     - name: Wait until main Datacenter actually gets operational
       # Note: when main storage domain exits maintenance datacenter goes operational
       ovirt_datacenter_facts:
@@ -117,20 +143,17 @@
       until: "ovirt_datacenters[0].status == 'up'"
     - name: Put ISO storage domain out of maintenance
       # Note: the following may fail because of temporary NFS access problems from nodes - retrying to work around
-      # Note: the following actually returns with storage domain still in maintenance
-      # TODO: should wait for storage domain to exit maintenance
-      # TODO: unfortunately status doesn't get correctly registered for use with until
-      # TODO: unfortunately ovirt_storage_domain_facts does not return status property
+      # TODO: wait option notwithstanding, the following would return with storage domain still in maintenance - looping as a workaround - remove when fixed upstream
       ovirt_storage_domain:
         auth: "{{ ovirt_auth }}"
         name: "{{ iso_sd_name }}"
         data_center: "{{ dc_name }}"
         state: present
         wait: true
-      register: isosdenable_result
+      register: activateisodomain_result
       retries: 60
       delay: 30
-      until: isosdenable_result is succeeded
+      until: activateisodomain_result.storagedomain.status == "active"
     - name: Startup all guest VMs
       # Note: ignoring errors to allow for non-existent VMs
       # TODO: check for VM existence and skip if missing
@@ -140,7 +163,7 @@
         cluster: "{{ cluster_name }}"
         name: "{{ item.vm_name }}"
         wait: true
-      ignore_errors: true
+      ignore_errors: yes
       with_items: "{{ guest_vms }}"
     - name: Revoke the SSO token
       no_log: true
