@@ -127,6 +127,7 @@
         ca_file: "{{ ca_file }}"
     - name: Add external network provider for OVN
       # TODO: properly setup certificates for OVN communications and switch to HTTPS
+      # TODO: verify whether this is really needed on oVirt >= 4.2
       ovirt_external_provider:
         auth: "{{ ovirt_auth }}"
         name: "ovn_provider"
@@ -137,6 +138,7 @@
         read_only: false
         url: "http://{{ hostvars[groups['ovirtengine'] | first]['ansible_default_ipv4']['address'] }}:9696"
         wait: true
+      when: "(hvp_ovn_private_network_names | length) > 0"
     - name: Qualify Management network when it is the only one
       ovirt_network:
         auth: "{{ ovirt_auth }}"
