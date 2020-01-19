@@ -142,6 +142,10 @@
         no_block: no
     - name: Initialize the snapshot scheduler
       command: snap_scheduler.py init
+      retries: 60
+      delay: 30
+      register: snapschedinit_result
+      until: snapschedinit_result is succeeded
 - name: Configure Samba authentication and scheduled snapshot
   hosts: gluster_master
   remote_user: root
